@@ -1,0 +1,111 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  handle       String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  designs      Design[]
+  comments     Comment[]
+  ratings      Rating[]
+  bookmarks    Bookmark[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  designs     Design[]
+}
+
+model Tag {
+  id      String      @id @default(cuid())
+  name    String
+  slug    String      @unique
+  designs DesignTag[]
+}
+
+model Design {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String
+  content     String
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id])
+  parentDesignId String?
+  parentDesign   Design?     @relation("DesignRemix", fields: [parentDesignId], references: [id])
+  remixes        Design[]    @relation("DesignRemix")
+  categoryId  String?
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  images      DesignImage[]
+  tags        DesignTag[]
+  comments    Comment[]
+  ratings     Rating[]
+  bookmarks   Bookmark[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model DesignImage {
+  id       String  @id @default(cuid())
+  designId String
+  design   Design  @relation(fields: [designId], references: [id], onDelete: Cascade)
+  url      String
+  caption  String?
+  order    Int     @default(0)
+}
+
+model DesignTag {
+  designId String
+  tagId    String
+  design   Design @relation(fields: [designId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([designId, tagId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  designId  String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  design    Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  designId  String
+  authorId  String
+  value     Int
+  createdAt DateTime @default(now())
+  design    Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([designId, authorId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  designId  String
+  userId    String
+  createdAt DateTime @default(now())
+  design    Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([designId, userId])
+}
