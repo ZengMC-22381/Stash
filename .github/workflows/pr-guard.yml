@@ -1,0 +1,40 @@
+name: PR Guard
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    name: PR Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Block oversized files
+        run: |
+          set -euo pipefail
+          max_size=$((50 * 1024 * 1024))
+          failed=0
+          while IFS= read -r -d '' file; do
+            size=$(wc -c < "$file")
+            if [ "$size" -gt "$max_size" ]; then
+              echo "::error file=$file::File size ${size} exceeds 50MB limit."
+              failed=1
+            fi
+          done < <(find . -type f -not -path "./.git/*" -print0)
+          exit "$failed"
+
+      - name: Enforce branch naming for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          branch="${{ github.head_ref }}"
+          pattern='^codex/[0-9]+-[a-z0-9-]+$'
+          if [[ ! "$branch" =~ $pattern ]]; then
+            echo "::error::Branch name must match codex/<issue>-<slug>. Got: $branch"
+            exit 1
+          fi
