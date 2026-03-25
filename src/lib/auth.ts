@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs"
 import { SignJWT, jwtVerify } from "jose"
 import type { NextRequest, NextResponse } from "next/server"
 
-export const AUTH_COOKIE_NAME = "clawhub_token"
+export const AUTH_COOKIE_NAME = "stash_token"
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-change-me")
 
 export async function hashPassword(password: string) {

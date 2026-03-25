@@ -184,14 +184,15 @@ export default function DesignActions({ slug, content, locale }: Props) {
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/designs/${slug}/remix`, { method: "POST" })
+      const res = await fetch(`/api/resources/${slug}/remix`, { method: "POST" })
       const data = await res.json()
       if (!res.ok) {
         setMessage(data.error || copy.remixFailed)
         return
       }
-      if (data.design?.slug) {
-        router.push(`/designs/${data.design.slug}`)
+      const remixSlug = data.resource?.slug || data.design?.slug
+      if (remixSlug) {
+        router.push(`/resources/${remixSlug}`)
         return
       }
       setMessage(copy.remixed)

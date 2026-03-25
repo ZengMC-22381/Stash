@@ -244,7 +244,13 @@ export default function SubmitForm({ locale }: Props) {
         return
       }
 
-      setMessage(`${copy.publishedPrefix}/designs/${data.design.slug}`)
+      const createdSlug = data.resource?.slug || data.design?.slug
+      if (!createdSlug) {
+        setMessage(copy.submitFailed)
+        return
+      }
+
+      setMessage(`${copy.publishedPrefix}/resources/${createdSlug}`)
       setForm({
         title: "",
         description: "",
@@ -295,7 +301,7 @@ export default function SubmitForm({ locale }: Props) {
           rows={10}
           value={form.content}
           onChange={handleChange("content")}
-          placeholder="# DESIGN.md\n\n## Purpose\n..."
+          placeholder="# RESOURCE.md\n\n## Purpose\n..."
           className="w-full rounded-2xl border border-border bg-[#0F0F17] px-4 py-3 font-mono text-xs text-slate-200 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
         />
       </div>

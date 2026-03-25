@@ -1,37 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserIdFromRequest } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { RATE_LIMIT_RULES } from "@/lib/rate-limit-rules"
 import {
   DEFAULT_RESOURCE_TYPE,
+  RESOURCE_TAG_OPTIONS,
   RESOURCE_SCENARIO_OPTIONS,
   RESOURCE_TOOL_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
-  normalizeResourceTagValues,
   resolveDictionaryOption,
 } from "@/lib/resource-definition"
+import { validateResourcePayload } from "@/lib/resource-validation"
 import { ensureUniqueSlug, slugify } from "@/lib/slug"
 
 export const runtime = "nodejs"
-
-function normalizeImages(input: unknown) {
-  if (!Array.isArray(input)) return []
-  return input
-    .map((item, index) => {
-      if (typeof item === "string") {
-        return { url: item, order: index }
-      }
-      if (item && typeof item === "object" && "url" in item) {
-        const typed = item as { url: string; caption?: string; order?: number }
-        return {
-          url: String(typed.url),
-          caption: typed.caption ? String(typed.caption) : undefined,
-          order: typeof typed.order === "number" ? typed.order : index,
-        }
-      }
-      return null
-    })
-    .filter((item): item is { url: string; caption?: string; order: number } => Boolean(item && item.url))
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +23,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category")?.trim()
     const resourceType = searchParams.get("resourceType")?.trim()
     const tool = searchParams.get("tool")?.trim()
+    const tag = searchParams.get("tag")?.trim()
     const scenario = searchParams.get("scenario")?.trim()
     const sort = searchParams.get("sort")?.trim() || "latest"
     const takeParam = Number(searchParams.get("take"))
@@ -67,6 +51,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (tag) {
+      const tagOption = resolveDictionaryOption(tag, RESOURCE_TAG_OPTIONS)
+      const tagSlug = tagOption?.value || slugify(tag)
+      if (tagSlug) {
+        where.tags = {
+          some: {
+            tag: {
+              slug: tagSlug,
+            },
+          },
+        }
+      }
+    }
+
     if (scenario) {
       const scenarioOption = resolveDictionaryOption(scenario, RESOURCE_SCENARIO_OPTIONS)
       if (scenarioOption) {
@@ -82,12 +80,15 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    const normalizedSort = sort.toLowerCase()
     const orderBy =
-      sort === "popular"
-        ? { ratings: { _count: "desc" as const } }
-        : sort === "trending"
-          ? { comments: { _count: "desc" as const } }
-          : { createdAt: "desc" as const }
+      normalizedSort === "popular"
+        ? { copyEvents: { _count: "desc" as const } }
+        : normalizedSort === "liked" || normalizedSort === "top-liked"
+          ? { likes: { _count: "desc" as const } }
+          : normalizedSort === "trending"
+            ? { comments: { _count: "desc" as const } }
+            : { createdAt: "desc" as const }
 
     const designs = await prisma.design.findMany({
       where,
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
-        _count: { select: { comments: true, ratings: true, likes: true } },
+        _count: { select: { comments: true, ratings: true, likes: true, copyEvents: true } },
       },
     })
 
@@ -134,16 +135,17 @@ export async function GET(request: NextRequest) {
           ratings: rating?.count ?? 0,
           averageRating: rating?.avg ?? 0,
           likes: design._count.likes,
+          views: design._count.copyEvents,
         },
         createdAt: design.createdAt,
         updatedAt: design.updatedAt,
       }
     })
 
-    return NextResponse.json({ designs: payload })
+    return NextResponse.json({ resources: payload, designs: payload })
   } catch (error) {
     console.error("[DESIGNS_GET]", error)
-    return NextResponse.json({ error: "Failed to load designs." }, { status: 500 })
+    return NextResponse.json({ error: "Failed to load resources." }, { status: 500 })
   }
 }
 
@@ -154,17 +156,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
     }
 
-    const body = await request.json()
-    const title = String(body.title || "").trim()
-    const description = String(body.description || "").trim()
-    const content = String(body.content || "").trim()
-
-    if (!title || !description || !content) {
-      return NextResponse.json({ error: "Missing required fields." }, { status: 400 })
+    const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.resourceCreate, userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many resource submissions. Please try again later." }, {
+        status: 429,
+        headers: rateLimit.headers,
+      })
     }
 
-    const tags = normalizeResourceTagValues(body.tags)
-    const images = normalizeImages(body.images)
+    const body = await request.json()
+    const payload = validateResourcePayload({
+      title: String(body.title || ""),
+      description: String(body.description || ""),
+      content: String(body.content || ""),
+      tags: body.tags,
+      images: body.images,
+    })
+    if (!payload.ok) {
+      return NextResponse.json({ error: payload.error }, { status: 400 })
+    }
+
+    const { title, description, content, tags, images } = payload.value
     const inputResourceType = body.resourceType ?? body.type
     const typeOption = inputResourceType
       ? resolveDictionaryOption(inputResourceType, RESOURCE_TYPE_OPTIONS)
@@ -206,7 +218,7 @@ export async function POST(request: NextRequest) {
       return Boolean(existing)
     })
 
-    const design = await prisma.design.create({
+    const resource = await prisma.design.create({
       data: {
         title,
         description,
@@ -244,9 +256,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ design })
+    return NextResponse.json({ resource, design: resource })
   } catch (error) {
     console.error("[DESIGNS_POST]", error)
-    return NextResponse.json({ error: "Failed to create design." }, { status: 500 })
+    return NextResponse.json({ error: "Failed to create resource." }, { status: 500 })
   }
 }

@@ -20,20 +20,20 @@ export default async function ForumPage() {
       ? {
           section: "论坛",
           title: "社区讨论",
-          subtitle: "查看创作者最新评论与交流，点击可跳转到对应 DESIGN.md 详情页。",
+          subtitle: "查看创作者最新评论与交流，点击可跳转到对应资源详情页。",
           latest: "最新评论",
           empty: "目前还没有讨论，成为第一位评论者吧。",
           back: "返回首页",
-          openDesign: "查看设计稿",
+          openDesign: "查看资源",
         }
       : {
           section: "Forum",
           title: "Community Discussions",
-          subtitle: "Read the latest creator comments and jump to the corresponding DESIGN.md page.",
+          subtitle: "Read the latest creator comments and jump to the corresponding resource page.",
           latest: "Latest Comments",
           empty: "No discussions yet. Be the first to comment.",
           back: "Back to Home",
-          openDesign: "Open Design",
+          openDesign: "Open Resource",
         }
 
   return (
@@ -74,9 +74,9 @@ export default async function ForumPage() {
                 <p className="mt-4 text-sm leading-6 text-slate-700">{thread.content}</p>
 
                 <div className="mt-5 flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-500">{thread.design.title}</p>
+                  <p className="text-xs text-slate-500">{thread.resource.title}</p>
                   <Link
-                    href={`/designs/${thread.design.slug}`}
+                    href={`/resources/${thread.resource.slug}`}
                     className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-primary"
                   >
                     {copy.openDesign}

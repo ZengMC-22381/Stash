@@ -1,9 +1,9 @@
-import DesignDetailPage from "@/app/designs/[slug]/page"
+import ResourceDetailPage from "@/app/resources/[slug]/page"
 
 type PageProps = {
   params: Promise<{ slug: string }>
 }
 
 export default function LegacyDesignPage(props: PageProps) {
-  return <DesignDetailPage {...props} />
+  return <ResourceDetailPage {...props} />
 }

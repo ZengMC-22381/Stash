@@ -1,12 +1,15 @@
 {
-  "name": "design-md-hub",
+  "name": "stash",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "rm -rf .next && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prisma": "prisma",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
@@ -31,6 +34,7 @@
     "postcss": "^8.4.33",
     "prisma": "^5.19.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createToken, hashPassword, setAuthCookie } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { RATE_LIMIT_RULES } from "@/lib/rate-limit-rules"
 import { ensureUniqueSlug } from "@/lib/slug"
 
 export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.authRegister)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, {
+        status: 429,
+        headers: rateLimit.headers,
+      })
+    }
+
     const body = await request.json()
     const name = String(body.name || "").trim()
     const email = String(body.email || "").trim().toLowerCase()
@@ -15,6 +25,14 @@ export async function POST(request: NextRequest) {
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 })
+    }
+
+    if (!email.includes("@")) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 })
+    }
+
+    if (password.length < 8 || password.length > 128) {
+      return NextResponse.json({ error: "Password must be between 8 and 128 characters." }, { status: 400 })
     }
 
     const existing = await prisma.user.findUnique({ where: { email } })
