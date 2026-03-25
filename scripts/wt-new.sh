@@ -3,13 +3,13 @@ set -euo pipefail
 
 if [ "${1:-}" = "" ] || [ "${2:-}" = "" ]; then
   echo "Usage: $0 <issue-number> <slug> [base-branch]"
-  echo "Example: $0 128 login-page origin/main"
+  echo "Example: $0 128 login-page main"
   exit 1
 fi
 
 issue="$1"
 slug_raw="$2"
-base_branch="${3:-origin/main}"
+base_branch="${3:-main}"
 
 if [[ ! "$issue" =~ ^[0-9]+$ ]]; then
   echo "Error: <issue-number> must be numeric."
@@ -28,7 +28,16 @@ name="${issue}-${slug}"
 branch="codex/${name}"
 path="${wt_root}/${name}"
 
-git -C "$repo_root" fetch origin
+# Best-effort remote sync. If network is unstable, continue with local refs.
+if ! git -C "$repo_root" fetch origin --prune >/dev/null 2>&1; then
+  echo "Warning: 'git fetch origin' failed. Continue with local refs."
+fi
+
+if ! git -C "$repo_root" rev-parse --verify --quiet "${base_branch}^{commit}" >/dev/null; then
+  echo "Error: base branch not found: $base_branch"
+  echo "Tip: use an existing local branch, e.g. 'main'"
+  exit 1
+fi
 
 if git -C "$repo_root" show-ref --verify --quiet "refs/heads/${branch}"; then
   echo "Error: local branch already exists: $branch"
@@ -41,9 +50,12 @@ if [ -e "$path" ]; then
 fi
 
 mkdir -p "$wt_root"
-git -C "$repo_root" worktree add -b "$branch" "$path" "$base_branch"
+git -C "$repo_root" worktree add --no-track -b "$branch" "$path" "$base_branch"
 
 echo "Created worktree."
 echo "  Branch: $branch"
 echo "  Path:   $path"
+echo "Next:"
+echo "  cd \"$path\""
+echo "  git push -u origin HEAD"
 echo "Open this path in Codex as an independent thread."
