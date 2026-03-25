@@ -13,7 +13,7 @@ export async function GET() {
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
-        _count: { select: { comments: true, ratings: true } },
+        _count: { select: { comments: true, ratings: true, likes: true } },
       },
     })
 

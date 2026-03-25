@@ -10,8 +10,27 @@ interface Category {
   slug: string
 }
 
+interface DictionaryOption {
+  value: string
+  label: string
+}
+
+interface ResourceDictionary {
+  resourceTypes: DictionaryOption[]
+  tools: DictionaryOption[]
+  tags: DictionaryOption[]
+  scenarios: DictionaryOption[]
+}
+
 type Props = {
   locale: Locale
+}
+
+const emptyDictionary: ResourceDictionary = {
+  resourceTypes: [],
+  tools: [],
+  tags: [],
+  scenarios: [],
 }
 
 export default function SubmitForm({ locale }: Props) {
@@ -26,10 +45,18 @@ export default function SubmitForm({ locale }: Props) {
           title: "标题",
           titlePlaceholder: "Nimbus SaaS 新手引导",
           desc: "简要描述",
-          descPlaceholder: "描述这个 DESIGN.md 主要解决的设计目标。",
-          content: "DESIGN.md 内容",
-          tags: "标签",
-          tagsPlaceholder: "SaaS, 仪表盘, 极简",
+          descPlaceholder: "描述这个资源主要解决的设计目标。",
+          content: "资源内容（支持 .md）",
+          resourceType: "资源类型",
+          selectResourceType: "请选择资源类型",
+          toolAgent: "工具 / Agents",
+          selectToolAgent: "请选择工具 / Agents",
+          scenario: "场景",
+          selectScenario: "请选择场景",
+          dictionaryTag: "标签（字典）",
+          selectDictionaryTag: "请选择标签",
+          tags: "自定义标签",
+          tagsPlaceholder: "可继续补充标签，逗号分隔",
           category: "分类",
           selectCategory: "请选择分类",
           imageUrls: "效果图 URL",
@@ -40,7 +67,7 @@ export default function SubmitForm({ locale }: Props) {
           noFiles: "未选择文件",
           remove: "移除",
           publishing: "发布中...",
-          publish: "发布 DESIGN.md",
+          publish: "发布资源",
         }
       : {
           uploadNeedLogin: "Please sign in before uploading images.",
@@ -51,10 +78,18 @@ export default function SubmitForm({ locale }: Props) {
           title: "Title",
           titlePlaceholder: "Nimbus SaaS Onboarding",
           desc: "Short Description",
-          descPlaceholder: "Describe what the prompt is optimized for.",
-          content: "DESIGN.md Content",
-          tags: "Tags",
-          tagsPlaceholder: "SaaS, Dashboard, Minimal",
+          descPlaceholder: "Describe what this resource is optimized for.",
+          content: "Resource Content (.md supported)",
+          resourceType: "Resource Type",
+          selectResourceType: "Select resource type",
+          toolAgent: "Tool / Agent",
+          selectToolAgent: "Select tool / agent",
+          scenario: "Scenario",
+          selectScenario: "Select scenario",
+          dictionaryTag: "Dictionary Tag",
+          selectDictionaryTag: "Select dictionary tag",
+          tags: "Custom Tags",
+          tagsPlaceholder: "Add extra tags, comma separated",
           category: "Category",
           selectCategory: "Select a category",
           imageUrls: "Output Image URLs",
@@ -65,10 +100,11 @@ export default function SubmitForm({ locale }: Props) {
           noFiles: "No files selected",
           remove: "Remove",
           publishing: "Publishing...",
-          publish: "Publish DESIGN.md",
+          publish: "Publish Resource",
         }
 
   const [categories, setCategories] = useState<Category[]>([])
+  const [dictionary, setDictionary] = useState<ResourceDictionary>(emptyDictionary)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])
@@ -77,6 +113,10 @@ export default function SubmitForm({ locale }: Props) {
     title: "",
     description: "",
     content: "",
+    resourceType: "design-md",
+    toolAgent: "",
+    scenario: "",
+    dictionaryTag: "",
     tags: "",
     category: "",
     images: "",
@@ -85,10 +125,28 @@ export default function SubmitForm({ locale }: Props) {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/api/categories")
-        if (!res.ok) return
-        const data = await res.json()
-        setCategories(data.categories || [])
+        const [categoriesRes, dictionaryRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/resources/dictionary"),
+        ])
+
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json()
+          setCategories(categoriesData.categories || [])
+        }
+
+        if (dictionaryRes.ok) {
+          const dictionaryData = await dictionaryRes.json()
+          const nextDictionary = dictionaryData.dictionary || emptyDictionary
+          setDictionary(nextDictionary)
+
+          if (Array.isArray(nextDictionary.resourceTypes) && nextDictionary.resourceTypes.length > 0) {
+            setForm((prev) => ({
+              ...prev,
+              resourceType: prev.resourceType || nextDictionary.resourceTypes[0].value,
+            }))
+          }
+        }
       } catch {
         // ignore
       }
@@ -102,9 +160,10 @@ export default function SubmitForm({ locale }: Props) {
     }
   }, [previews])
 
-  const handleChange = (field: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }))
-  }
+  const handleChange =
+    (field: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setForm((prev) => ({ ...prev, [field]: event.target.value }))
+    }
 
   const handleFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files || [])
@@ -132,6 +191,13 @@ export default function SubmitForm({ locale }: Props) {
       .map((item) => item.trim())
       .filter(Boolean)
 
+    const customTags = form.tags
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+
+    const tags = Array.from(new Set([...(form.dictionaryTag ? [form.dictionaryTag] : []), ...customTags]))
+
     try {
       let uploadedUrls: string[] = []
       if (files.length) {
@@ -152,14 +218,17 @@ export default function SubmitForm({ locale }: Props) {
 
       const images = [...uploadedUrls, ...remoteImages]
 
-      const res = await fetch("/api/designs", {
+      const res = await fetch("/api/resources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: form.title,
           description: form.description,
           content: form.content,
-          tags: form.tags,
+          resourceType: form.resourceType,
+          toolAgent: form.toolAgent,
+          scenario: form.scenario,
+          tags,
           categorySlug: form.category,
           images,
         }),
@@ -176,7 +245,18 @@ export default function SubmitForm({ locale }: Props) {
       }
 
       setMessage(`${copy.publishedPrefix}/designs/${data.design.slug}`)
-      setForm({ title: "", description: "", content: "", tags: "", category: "", images: "" })
+      setForm({
+        title: "",
+        description: "",
+        content: "",
+        resourceType: dictionary.resourceTypes[0]?.value || "design-md",
+        toolAgent: "",
+        scenario: "",
+        dictionaryTag: "",
+        tags: "",
+        category: "",
+        images: "",
+      })
       setFiles([])
       setPreviews([])
     } catch {
@@ -220,15 +300,69 @@ export default function SubmitForm({ locale }: Props) {
         />
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-700">{copy.resourceType}</label>
+          <select
+            value={form.resourceType}
+            onChange={handleChange("resourceType")}
+            className="h-11 w-full rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+          >
+            <option value="">{copy.selectResourceType}</option>
+            {dictionary.resourceTypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-700">{copy.toolAgent}</label>
+          <select
+            value={form.toolAgent}
+            onChange={handleChange("toolAgent")}
+            className="h-11 w-full rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+          >
+            <option value="">{copy.selectToolAgent}</option>
+            {dictionary.tools.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-700">{copy.scenario}</label>
+          <select
+            value={form.scenario}
+            onChange={handleChange("scenario")}
+            className="h-11 w-full rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+          >
+            <option value="">{copy.selectScenario}</option>
+            {dictionary.scenarios.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700">{copy.tags}</label>
-          <input
-            value={form.tags}
-            onChange={handleChange("tags")}
-            placeholder={copy.tagsPlaceholder}
+          <label className="text-sm font-semibold text-slate-700">{copy.dictionaryTag}</label>
+          <select
+            value={form.dictionaryTag}
+            onChange={handleChange("dictionaryTag")}
             className="h-11 w-full rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-          />
+          >
+            <option value="">{copy.selectDictionaryTag}</option>
+            {dictionary.tags.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-700">{copy.category}</label>
@@ -245,6 +379,16 @@ export default function SubmitForm({ locale }: Props) {
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-slate-700">{copy.tags}</label>
+        <input
+          value={form.tags}
+          onChange={handleChange("tags")}
+          placeholder={copy.tagsPlaceholder}
+          className="h-11 w-full rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+        />
       </div>
 
       <div className="space-y-2">

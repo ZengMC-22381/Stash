@@ -1,10 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
 import { ArrowRight, Copy, Heart, Layers, Sparkles } from "lucide-react"
-import AvatarStack from "@/components/avatar-stack"
 import DesignCard from "@/components/design-card"
 import TopicCard from "@/components/topic-card"
-import { getDesignDetail, getFeaturedDesigns, getTopics } from "@/lib/data"
+import RotatingHeroWord from "@/components/rotating-hero-word"
+import { getDesignDetail, getFeaturedDesigns, getHomeHeroStats, getTopics } from "@/lib/data"
 import { getServerLocale } from "@/lib/server-locale"
 
 const container = "mx-auto w-full max-w-[1100px] px-6"
@@ -47,33 +47,28 @@ Craft a premium onboarding experience for modern SaaS teams.
 
 export default async function Home() {
   const locale = await getServerLocale()
-  const featuredDesigns = await getFeaturedDesigns(4)
-  const topics = await getTopics(locale)
+  const [featuredDesigns, topics, heroStats] = await Promise.all([
+    getFeaturedDesigns(4),
+    getTopics(locale),
+    getHomeHeroStats(),
+  ])
   const preview = featuredDesigns[0] ? await getDesignDetail(featuredDesigns[0].slug) : null
+  const numberLocale = locale === "zh" ? "zh-CN" : "en-US"
 
   const copy =
     locale === "zh"
       ? {
-          badge: "DESIGN.md 中文社区",
-          titleA: "发现真正",
-          titleB: "可落地的 DESIGN.md",
-          subtitle: "浏览真实 Prompt 与对应 UI 效果图，查看设计师实际交付方案并快速 Remix。",
+          heroBadge: "把AI时代的设计逻辑，变成可展示的资产",
+          titleA: "发现真正有效的",
+          heroWords: ["DESIGN.md", "Skill", "设计Agent"],
+          subtitle: "分享真正可直接使用的、AI时代的设计技巧。",
           ctaExplore: "浏览设计",
           ctaSubmit: "投稿 DESIGN.md",
-          creatorsToday: "1,284 位创作者今日分享",
-          remixes: "5.8k 次 Remix",
-          saves: "22k 次收藏",
-          product: "产品定位",
-          productValue: "设计社区",
-          stack: "技术栈",
-          stackValue: "Next.js + Tailwind",
-          docLayout: "布局：主视觉 + 引导步骤 + 功能亮点",
-          output: "效果图",
-          heroUi: "首屏 UI",
           trending: "趋势",
           today: "今天",
           copies: "复制次数",
-          remixers: "12 位 Remix 作者",
+          heroTags: ["SaaS", "极简", "呼吸感"],
+          contributorsSuffix: "位 贡献者",
           featured: "精选",
           featuredTitle: "精选 DESIGN.md",
           viewAll: "查看全部",
@@ -98,27 +93,17 @@ export default async function Home() {
           previewTagLine: "SaaS / 极简 / 编辑感",
         }
       : {
-          badge: "The #1 DESIGN.md Community",
-          titleA: "Discover DESIGN.md",
-          titleB: "that actually works",
-          subtitle:
-            "Browse real prompt presets with matching UI outputs. Explore what designers actually ship and remix them into your own workflows.",
+          heroBadge: "Turn AI-era design logic into reusable assets",
+          titleA: "Discover what actually works",
+          heroWords: ["DESIGN.md", "Skill", "Design Agent"],
+          subtitle: "Share practical, ready-to-use design workflows for the AI era.",
           ctaExplore: "Explore Designs",
           ctaSubmit: "Submit Your DESIGN.md",
-          creatorsToday: "1,284 creators sharing today",
-          remixes: "5.8k remixes",
-          saves: "22k saves",
-          product: "Product",
-          productValue: "Design Community",
-          stack: "Stack",
-          stackValue: "Next.js + Tailwind",
-          docLayout: "Layout: hero + steps + features",
-          output: "Output",
-          heroUi: "Hero UI",
           trending: "Trending",
           today: "Today",
           copies: "copies",
-          remixers: "12 remixers",
+          heroTags: ["SaaS", "Minimal", "Airy"],
+          contributorsSuffix: "contributors",
           featured: "Featured",
           featuredTitle: "Featured DESIGN.md",
           viewAll: "View all",
@@ -140,7 +125,6 @@ export default async function Home() {
           previewFallbackB: "Onboarding Steps",
           previewFallbackC: "Feature Grid",
           previewOutput: "Output",
-          previewTagLine: "SaaS / Minimal / Editorial",
         }
 
   const previewItems = preview?.images?.length
@@ -153,112 +137,122 @@ export default async function Home() {
         { label: copy.previewFallbackB, image: null },
         { label: copy.previewFallbackC, image: null },
       ]
+  const todayCopyCountLabel = heroStats.todayCopyCount.toLocaleString(numberLocale)
+  const contributorCountLabel = `${heroStats.contributorCount.toLocaleString(numberLocale)} ${copy.contributorsSuffix}`
+  const heroContributorTones = [
+    "from-[#6C47FF] via-[#8B5CF6] to-[#FF6B97]",
+    "from-[#3B82F6] via-[#60A5FA] to-[#10B981]",
+    "from-[#F59E0B] via-[#F97316] to-[#EF4444]",
+    "from-[#6366F1] via-[#8B5CF6] to-[#EC4899]",
+  ]
 
   return (
     <div className="space-y-24 pb-24">
-      <section className="relative border-b border-border bg-[linear-gradient(135deg,_#F8F4FF_0%,_#FFF4F8_50%,_#F4F8FF_100%)] py-20 lg:py-32">
-        <div className={`${container} grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]`}>
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white/90 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-              {copy.badge}
+      <section className="relative border-b border-border bg-[linear-gradient(152.705deg,_#F8F4FF_0%,_#FFF4F8_50%,_#F4F8FF_100%)] px-6 pb-14 pt-24 lg:px-[89.5px] lg:pb-[56px] lg:pt-[128px]">
+        <div className="mx-auto grid w-full max-w-[1100px] gap-16 lg:grid-cols-[501px_535px] lg:items-center">
+          <div className="space-y-5">
+            <div className="inline-flex items-center justify-center rounded-full border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] py-2 text-[11px] font-semibold uppercase tracking-[2.2px] text-[#7847ff]">
+              {copy.heroBadge}
             </div>
-            <h1 className="font-display text-5xl leading-tight text-slate-900 md:text-6xl lg:text-[72px] lg:leading-[1.05]">
-              {copy.titleA}
-              <span className="block italic text-primary">{copy.titleB}</span>
-            </h1>
-            <p className="max-w-xl text-lg text-slate-600">{copy.subtitle}</p>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="space-y-0">
+              <h1 className="text-[56px] font-black leading-[1.05] tracking-[-0.05em] text-[#2f3334] lg:text-[72px] lg:leading-[72px]">
+                {copy.titleA}
+              </h1>
+              <div className="font-display text-[56px] italic leading-[1.05] tracking-[-0.05em] text-[#7847ff] lg:text-[72px] lg:leading-[72px]">
+                <RotatingHeroWord words={copy.heroWords} />
+              </div>
+            </div>
+            <p className="max-w-[576px] text-[18px] leading-7 text-[#475569]">{copy.subtitle}</p>
+            <div className="flex h-[44px] items-center gap-4">
               <Link
                 href="/explore"
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-white shadow-float transition duration-150 hover:brightness-105 active:scale-[0.97]"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#7847ff] px-6 text-sm font-semibold text-white shadow-float transition duration-150 hover:brightness-105 active:scale-[0.97]"
               >
                 {copy.ctaExplore}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/submit"
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white/90 px-6 text-sm font-semibold text-slate-700 shadow-soft transition duration-150 hover:border-primary"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-6 text-sm font-semibold text-[#334155] shadow-soft transition duration-150 hover:border-[#b8bfd0]"
               >
                 {copy.ctaSubmit}
                 <Sparkles className="h-4 w-4" />
               </Link>
             </div>
-            <div className="flex flex-wrap items-center gap-8 text-sm text-slate-500">
-              <div className="flex items-center gap-3">
-                <AvatarStack />
-                <span>{copy.creatorsToday}</span>
-              </div>
-              <div className="flex items-center gap-6">
-                <span>{copy.remixes}</span>
-                <span>{copy.saves}</span>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-8 text-xs text-slate-500">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{copy.product}</div>
-                <div className="mt-1 text-sm font-semibold text-slate-700">{copy.productValue}</div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">{copy.stack}</div>
-                <div className="mt-1 text-sm font-semibold text-slate-700">{copy.stackValue}</div>
-              </div>
-            </div>
           </div>
 
-          <div className="relative h-[520px]">
-            <div className="absolute -left-2 top-0 w-64 rounded-3xl border border-border bg-white/90 p-5 shadow-float backdrop-blur animate-float-slow">
-              <div className="text-xs font-semibold text-slate-500">DESIGN.md</div>
-              <div className="mt-4 space-y-2 text-xs text-slate-600">
-                <div className="h-2 w-3/4 rounded-full bg-slate-200" />
-                <div className="h-2 w-full rounded-full bg-slate-200" />
-                <div className="h-2 w-5/6 rounded-full bg-slate-200" />
-                <div className="h-2 w-2/3 rounded-full bg-slate-200" />
-              </div>
-              <div className="mt-6 rounded-2xl border border-border bg-muted px-3 py-2 text-[11px] text-slate-500">
-                {copy.docLayout}
-              </div>
-            </div>
-
-            <div className="absolute right-0 top-8 w-72 rounded-[32px] border border-border bg-gradient-to-br from-[#E8E0FF] via-white to-white p-4 shadow-float animate-float-fast">
-              <div className="overflow-hidden rounded-3xl bg-white">
-                <div className="h-36 bg-gradient-to-br from-[#0A0A0A] to-[#1F1F2D]" />
-                <div className="space-y-2 p-4">
-                  <div className="h-2 w-3/4 rounded-full bg-slate-200" />
-                  <div className="h-2 w-full rounded-full bg-slate-200" />
-                  <div className="h-2 w-2/3 rounded-full bg-slate-200" />
+          <div className="relative h-[476px] w-full max-w-[535px]">
+            <div className="absolute inset-0 rounded-[48px] bg-[linear-gradient(133.692deg,_#E6DEFF_0%,_#FFE5EC_100%)] opacity-20 blur-[32px]" />
+            <div className="absolute inset-0 animate-float-slow overflow-visible rounded-[48px] border border-[rgba(175,178,179,0.1)] bg-white p-[13px] shadow-[0px_20px_40px_-5px_rgba(47,51,52,0.05)]">
+              <div className="grid h-[450px] grid-cols-2 overflow-hidden rounded-[32px]">
+                <div className="border-r border-[rgba(255,255,255,0.05)] bg-[#1e1e1e] px-8 py-8 text-[14px] leading-5">
+                  <pre className="whitespace-pre-wrap text-[#e6deff]">{`# Design Configuration`}</pre>
+                  <pre className="mt-2 whitespace-pre-wrap text-[#ffe5ec]">{`preset: "minimalist-saas"`}</pre>
+                  <pre className="mt-2 whitespace-pre-wrap text-white">{`layout: {`}</pre>
+                  <pre className="pl-4 text-[#d1d5db]">{`spacing: "extra-loose",`}</pre>
+                  <pre className="pl-4 text-[#d1d5db]">{`radius: "full",`}</pre>
+                  <pre className="pl-4 text-[#d1d5db]">{`surfaces: ["glass", "tonal"]`}</pre>
+                  <pre className="text-white">{`}`}</pre>
+                  <pre className="mt-2 text-[#e6deff]">{`colors: {`}</pre>
+                  <pre className="pl-4 text-[#c084fc]">{`primary: "#615b7c",`}</pre>
+                  <pre className="pl-4 text-[#f9a8d4]">{`accent: "#ffe5ec"`}</pre>
+                  <pre className="text-[#e6deff]">{`}`}</pre>
+                </div>
+                <div className="space-y-4 bg-white p-6">
+                  <div className="h-8 w-32 rounded-full bg-[#f3f4f4]" />
+                  <div className="h-32 rounded-[32px] bg-[#e6deff]" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-24 rounded-[32px] bg-[#ffe5ec]" />
+                    <div className="h-24 rounded-[32px] bg-[#eceeee]" />
+                  </div>
+                  <div className="h-20 rounded-[32px] bg-[#f3f4f4]" />
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                <span className="rounded-full border border-border bg-white px-3 py-1">{copy.output}</span>
-                <span>{copy.heroUi}</span>
-              </div>
             </div>
 
-            <div className="absolute bottom-16 left-12 w-60 rounded-3xl border border-border bg-white/90 p-4 shadow-float backdrop-blur">
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span className="rounded-full bg-secondary px-3 py-1">{copy.trending}</span>
-                <span>{copy.today}</span>
+            <div className="absolute left-[147.5px] top-[330px] z-20 h-[118px] w-[240px] animate-float-fast rounded-[32px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] pb-px pt-[17px] shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]">
+              <div className="flex items-center justify-between">
+                <span className="rounded-full bg-[#f5f5f5] px-3 py-[3px] text-[12px] leading-4 text-[#64748b]">
+                  {copy.trending}
+                </span>
+                <span className="text-[12px] leading-4 text-[#64748b]">{copy.today}</span>
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <div>
-                  <div className="text-lg font-semibold text-slate-900">2,340</div>
-                  <div className="text-xs text-slate-500">{copy.copies}</div>
+                  <div className="text-[30px] font-semibold leading-7 text-[#0f172a]">{todayCopyCountLabel}</div>
+                  <div className="text-[12px] leading-4 text-[#64748b]">{copy.copies}</div>
                 </div>
-                <div className="h-10 w-16 rounded-2xl bg-gradient-to-br from-[#6C47FF] via-[#9D7BFF] to-[#FF6B97]" />
+                <div className="h-10 w-16 rounded-3xl bg-gradient-to-br from-[#6C47FF] via-[#9D7BFF] to-[#FF6B97]" />
               </div>
             </div>
 
-            <div className="absolute bottom-0 right-8 w-56 rounded-3xl border border-border bg-white/90 p-4 shadow-float backdrop-blur">
-              <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
-                {copy.previewTagLine.split(" / ").map((tag) => (
-                  <span key={tag} className="rounded-full bg-secondary px-3 py-1">
+            <div
+              className="absolute left-[291.7px] top-[405.5px] z-20 h-[106.5px] w-[224px] animate-float-slow rounded-[32px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] pb-px pt-[17px] shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]"
+              style={{ animationDelay: "-2.5s" }}
+            >
+              <div className="flex flex-wrap gap-2">
+                {copy.heroTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-[#f5f5f5] px-3 py-[3px] text-[11px] leading-[16.5px] text-[#475569]"
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
-              <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
-                <AvatarStack />
-                <span>{copy.remixers}</span>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex items-center">
+                  {heroContributorTones.map((tone, index) => (
+                    <span
+                      key={tone}
+                      className={`-ml-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br ${tone} text-[11px] font-semibold text-white shadow-soft`}
+                      style={{ zIndex: heroContributorTones.length - index }}
+                    >
+                      {index + 1}
+                    </span>
+                  ))}
+                </div>
+                <span className="text-[12px] leading-4 text-[#64748b]">{contributorCountLabel}</span>
               </div>
             </div>
           </div>

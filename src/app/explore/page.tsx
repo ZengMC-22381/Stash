@@ -3,20 +3,56 @@ import { ArrowRight } from "lucide-react"
 import DesignCard from "@/components/design-card"
 import TopicCard from "@/components/topic-card"
 import { getDesignSummaries, getTopics } from "@/lib/data"
+import { getFacetDisplayName } from "@/lib/search-facets"
 import { getServerLocale } from "@/lib/server-locale"
 
 const container = "mx-auto w-full max-w-[1100px] px-6"
 
 type PageProps = {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{
+    search?: string
+    types?: string
+    styles?: string
+    frameworks?: string
+    fonts?: string
+    platforms?: string
+  }>
+}
+
+function parseCsvParam(input?: string) {
+  if (!input) return []
+  return input
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
 }
 
 export default async function ExplorePage({ searchParams }: PageProps) {
   const params = await searchParams
   const search = typeof params.search === "string" ? params.search.trim() : ""
+  const selectedTypes = parseCsvParam(params.types)
+  const selectedStyles = parseCsvParam(params.styles)
+  const selectedFrameworks = parseCsvParam(params.frameworks)
+  const selectedFonts = parseCsvParam(params.fonts)
+  const selectedPlatforms = parseCsvParam(params.platforms)
   const locale = await getServerLocale()
-  const designs = await getDesignSummaries(12, { search })
+  const designs = await getDesignSummaries(12, {
+    search,
+    typeSlugs: selectedTypes,
+    styleSlugs: selectedStyles,
+    frameworkSlugs: selectedFrameworks,
+    fontSlugs: selectedFonts,
+    platformSlugs: selectedPlatforms,
+  })
   const topics = await getTopics(locale)
+  const topicNameMap = new Map(topics.map((topic) => [topic.slug, topic.title]))
+
+  const hasFacetFilters =
+    selectedTypes.length > 0 ||
+    selectedStyles.length > 0 ||
+    selectedFrameworks.length > 0 ||
+    selectedFonts.length > 0 ||
+    selectedPlatforms.length > 0
 
   const copy =
     locale === "zh"
@@ -28,7 +64,12 @@ export default async function ExplorePage({ searchParams }: PageProps) {
           newest: "最新发布",
           searchResults: "搜索结果",
           noResults: "没有找到匹配内容，试试其他关键词。",
-          searchKeyword: "关键词",
+          searchKeyword: "关键词：",
+          filterType: "类型",
+          filterStyle: "风格",
+          filterFramework: "框架",
+          filterFont: "字体",
+          filterPlatform: "平台",
           back: "返回首页",
           browseTopic: "按主题浏览",
         }
@@ -40,7 +81,12 @@ export default async function ExplorePage({ searchParams }: PageProps) {
           newest: "Newest Drops",
           searchResults: "Search Results",
           noResults: "No matching designs found. Try another keyword.",
-          searchKeyword: "Keyword",
+          searchKeyword: "Keyword:",
+          filterType: "Type",
+          filterStyle: "Style",
+          filterFramework: "Framework",
+          filterFont: "Font",
+          filterPlatform: "Platform",
           back: "Back to Home",
           browseTopic: "Browse by Topic",
         }
@@ -55,6 +101,41 @@ export default async function ExplorePage({ searchParams }: PageProps) {
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-xs text-slate-600">
             <span className="font-semibold">{copy.searchKeyword}</span>
             <span>{search}</span>
+          </div>
+        ) : null}
+        {hasFacetFilters ? (
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+            {selectedTypes.map((type) => (
+              <span key={type} className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2">
+                {copy.filterType}: {topicNameMap.get(type) || type}
+              </span>
+            ))}
+            {selectedStyles.map((style) => (
+              <span key={style} className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2">
+                {copy.filterStyle}: {getFacetDisplayName("styles", style, locale)}
+              </span>
+            ))}
+            {selectedFrameworks.map((framework) => (
+              <span
+                key={framework}
+                className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2"
+              >
+                {copy.filterFramework}: {getFacetDisplayName("frameworks", framework, locale)}
+              </span>
+            ))}
+            {selectedFonts.map((font) => (
+              <span key={font} className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2">
+                {copy.filterFont}: {getFacetDisplayName("fonts", font, locale)}
+              </span>
+            ))}
+            {selectedPlatforms.map((platform) => (
+              <span
+                key={platform}
+                className="inline-flex items-center rounded-full border border-border bg-white px-4 py-2"
+              >
+                {copy.filterPlatform}: {getFacetDisplayName("platforms", platform, locale)}
+              </span>
+            ))}
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-600">

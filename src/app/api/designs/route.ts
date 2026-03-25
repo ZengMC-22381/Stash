@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserIdFromRequest } from "@/lib/auth"
+import {
+  DEFAULT_RESOURCE_TYPE,
+  RESOURCE_SCENARIO_OPTIONS,
+  RESOURCE_TOOL_OPTIONS,
+  RESOURCE_TYPE_OPTIONS,
+  normalizeResourceTagValues,
+  resolveDictionaryOption,
+} from "@/lib/resource-definition"
 import { ensureUniqueSlug, slugify } from "@/lib/slug"
 
 export const runtime = "nodejs"
-
-function normalizeTags(input: unknown) {
-  if (Array.isArray(input)) {
-    return input.map((tag) => String(tag).trim()).filter(Boolean)
-  }
-  if (typeof input === "string") {
-    return input
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean)
-  }
-  return []
-}
 
 function normalizeImages(input: unknown) {
   if (!Array.isArray(input)) return []
@@ -43,6 +38,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search")?.trim()
     const category = searchParams.get("category")?.trim()
+    const resourceType = searchParams.get("resourceType")?.trim()
+    const tool = searchParams.get("tool")?.trim()
+    const scenario = searchParams.get("scenario")?.trim()
     const sort = searchParams.get("sort")?.trim() || "latest"
     const takeParam = Number(searchParams.get("take"))
     const skipParam = Number(searchParams.get("skip"))
@@ -53,6 +51,27 @@ export async function GET(request: NextRequest) {
 
     if (category) {
       where.category = { slug: category }
+    }
+
+    if (resourceType) {
+      const typeOption = resolveDictionaryOption(resourceType, RESOURCE_TYPE_OPTIONS)
+      if (typeOption) {
+        where.resourceType = typeOption.value
+      }
+    }
+
+    if (tool) {
+      const toolOption = resolveDictionaryOption(tool, RESOURCE_TOOL_OPTIONS)
+      if (toolOption) {
+        where.toolAgent = toolOption.label
+      }
+    }
+
+    if (scenario) {
+      const scenarioOption = resolveDictionaryOption(scenario, RESOURCE_SCENARIO_OPTIONS)
+      if (scenarioOption) {
+        where.scenario = scenarioOption.label
+      }
     }
 
     if (search) {
@@ -80,7 +99,7 @@ export async function GET(request: NextRequest) {
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
-        _count: { select: { comments: true, ratings: true } },
+        _count: { select: { comments: true, ratings: true, likes: true } },
       },
     })
 
@@ -103,6 +122,9 @@ export async function GET(request: NextRequest) {
         slug: design.slug,
         title: design.title,
         description: design.description,
+        resourceType: design.resourceType,
+        toolAgent: design.toolAgent,
+        scenario: design.scenario,
         author: design.author,
         category: design.category,
         tags: design.tags.map((entry) => entry.tag),
@@ -111,6 +133,7 @@ export async function GET(request: NextRequest) {
           comments: design._count.comments,
           ratings: rating?.count ?? 0,
           averageRating: rating?.avg ?? 0,
+          likes: design._count.likes,
         },
         createdAt: design.createdAt,
         updatedAt: design.updatedAt,
@@ -140,8 +163,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 })
     }
 
-    const tags = normalizeTags(body.tags)
+    const tags = normalizeResourceTagValues(body.tags)
     const images = normalizeImages(body.images)
+    const inputResourceType = body.resourceType ?? body.type
+    const typeOption = inputResourceType
+      ? resolveDictionaryOption(inputResourceType, RESOURCE_TYPE_OPTIONS)
+      : resolveDictionaryOption(DEFAULT_RESOURCE_TYPE, RESOURCE_TYPE_OPTIONS)
+    const toolOption = resolveDictionaryOption(body.toolAgent || body.tool, RESOURCE_TOOL_OPTIONS)
+    const scenarioOption = resolveDictionaryOption(body.scenario, RESOURCE_SCENARIO_OPTIONS)
+
+    if (inputResourceType && !typeOption) {
+      return NextResponse.json({ error: "Invalid resource type." }, { status: 400 })
+    }
+
+    if ((body.toolAgent || body.tool) && !toolOption) {
+      return NextResponse.json({ error: "Invalid tool/agent." }, { status: 400 })
+    }
+
+    if (body.scenario && !scenarioOption) {
+      return NextResponse.json({ error: "Invalid scenario." }, { status: 400 })
+    }
 
     let categoryId: string | undefined
 
@@ -171,6 +212,9 @@ export async function POST(request: NextRequest) {
         description,
         content,
         slug,
+        resourceType: typeOption?.value || DEFAULT_RESOURCE_TYPE,
+        toolAgent: toolOption?.label || null,
+        scenario: scenarioOption?.label || null,
         authorId: userId,
         categoryId,
         tags: {
@@ -196,6 +240,7 @@ export async function POST(request: NextRequest) {
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
+        _count: { select: { comments: true, ratings: true, likes: true } },
       },
     })
 
