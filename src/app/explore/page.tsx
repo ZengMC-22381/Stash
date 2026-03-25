@@ -1,8 +1,8 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import DesignCard from "@/components/design-card"
+import ResourceCard from "@/components/resource-card"
 import TopicCard from "@/components/topic-card"
-import { getDesignSummaries, getTopics } from "@/lib/data"
+import { getResourceSummaries, getTopics } from "@/lib/data"
 import { getFacetDisplayName } from "@/lib/search-facets"
 import { getServerLocale } from "@/lib/server-locale"
 
@@ -36,7 +36,7 @@ export default async function ExplorePage({ searchParams }: PageProps) {
   const selectedFonts = parseCsvParam(params.fonts)
   const selectedPlatforms = parseCsvParam(params.platforms)
   const locale = await getServerLocale()
-  const designs = await getDesignSummaries(12, {
+  const resources = await getResourceSummaries(12, {
     search,
     typeSlugs: selectedTypes,
     styleSlugs: selectedStyles,
@@ -58,8 +58,8 @@ export default async function ExplorePage({ searchParams }: PageProps) {
     locale === "zh"
       ? {
           section: "探索",
-          title: "探索 DESIGN.md",
-          subtitle: "发现最新与最受欢迎的 Prompt 方案，覆盖 SaaS、仪表盘、移动应用与 AI 工具。",
+          title: "探索资源",
+          subtitle: "发现最新与最受欢迎的资源，覆盖 SaaS、仪表盘、移动应用与 AI 工具。",
           all: "全部",
           newest: "最新发布",
           searchResults: "搜索结果",
@@ -75,8 +75,8 @@ export default async function ExplorePage({ searchParams }: PageProps) {
         }
       : {
           section: "Explore",
-          title: "Explore DESIGN.md",
-          subtitle: "Discover the newest and most remixed prompts across SaaS, dashboards, mobile apps, and AI tools.",
+          title: "Explore Resources",
+          subtitle: "Discover the newest and most remixed resources across SaaS, dashboards, mobile apps, and AI tools.",
           all: "All",
           newest: "Newest Drops",
           searchResults: "Search Results",
@@ -155,10 +155,10 @@ export default async function ExplorePage({ searchParams }: PageProps) {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        {designs.length ? (
+        {resources.length ? (
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {designs.map((design) => (
-              <DesignCard key={design.id} design={design} locale={locale} />
+            {resources.map((resource) => (
+              <ResourceCard key={resource.id} resource={resource} locale={locale} />
             ))}
           </div>
         ) : (

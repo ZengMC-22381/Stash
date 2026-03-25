@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { localizeTopic, type Locale } from "@/lib/locale"
 import { matchesDerivedFacetFilters } from "@/lib/search-facets"
 import { toneFromString } from "@/lib/tone"
-import type { AuthorProfile, DesignDetail, DesignSummary, Topic } from "@/types/design"
+import type { AuthorProfile, Topic } from "@/types/design"
+import type { ResourceDetail, ResourceSummary } from "@/types/resource"
 
-type DesignSummaryRow = Prisma.DesignGetPayload<{
+type ResourceSummaryRow = Prisma.DesignGetPayload<{
   include: {
     author: { select: { id: true; name: true; handle: true } }
     category: { select: { slug: true } }
@@ -15,7 +16,7 @@ type DesignSummaryRow = Prisma.DesignGetPayload<{
   }
 }>
 
-type GetDesignSummariesOptions = {
+type GetResourceSummariesOptions = {
   search?: string
   typeSlugs?: string[]
   styleSlugs?: string[]
@@ -32,7 +33,7 @@ export type ForumThread = {
     name: string
     handle: string
   }
-  design: {
+  resource: {
     slug: string
     title: string
   }
@@ -67,33 +68,36 @@ async function getRatingStats(ids: string[]) {
   )
 }
 
-function mapDesignSummary(
-  design: DesignSummaryRow,
+function mapResourceSummary(
+  resource: ResourceSummaryRow,
   ratingMap: Map<string, { avg: number; count: number }>
-): DesignSummary {
-  const rating = ratingMap.get(design.id)
+): ResourceSummary {
+  const rating = ratingMap.get(resource.id)
   return {
-    id: design.id,
-    slug: design.slug,
-    title: design.title,
-    description: design.description,
+    id: resource.id,
+    slug: resource.slug,
+    title: resource.title,
+    description: resource.description,
+    resourceType: resource.resourceType,
+    toolAgent: resource.toolAgent,
+    scenario: resource.scenario,
     author: {
-      name: design.author.name,
-      handle: design.author.handle,
+      name: resource.author.name,
+      handle: resource.author.handle,
     },
-    tags: design.tags.map((entry) => entry.tag.name),
-    image: design.images[0]?.url,
+    tags: resource.tags.map((entry) => entry.tag.name),
+    image: resource.images[0]?.url,
     stats: {
-      comments: design._count.comments,
+      comments: resource._count.comments,
       ratings: rating?.count ?? 0,
       averageRating: rating?.avg ?? 0,
     },
-    tone: toneFromString(design.slug),
+    tone: toneFromString(resource.slug),
   }
 }
 
-export async function getFeaturedDesigns(limit = 6): Promise<DesignSummary[]> {
-  const designs = await prisma.design.findMany({
+export async function getFeaturedResources(limit = 6): Promise<ResourceSummary[]> {
+  const resources = await prisma.design.findMany({
     take: limit,
     orderBy: { ratings: { _count: "desc" } },
     include: {
@@ -105,14 +109,14 @@ export async function getFeaturedDesigns(limit = 6): Promise<DesignSummary[]> {
     },
   })
 
-  const ratingMap = await getRatingStats(designs.map((design) => design.id))
-  return designs.map((design) => mapDesignSummary(design, ratingMap))
+  const ratingMap = await getRatingStats(resources.map((resource) => resource.id))
+  return resources.map((resource) => mapResourceSummary(resource, ratingMap))
 }
 
-export async function getDesignSummaries(
+export async function getResourceSummaries(
   limit = 12,
-  options: GetDesignSummariesOptions = {}
-): Promise<DesignSummary[]> {
+  options: GetResourceSummariesOptions = {}
+): Promise<ResourceSummary[]> {
   const search = options.search?.trim()
   const normalizedTypeSlugs = Array.from(
     new Set((options.typeSlugs || []).map((item) => item.trim()).filter(Boolean))
@@ -161,7 +165,7 @@ export async function getDesignSummaries(
     normalizedFontSlugs.length > 0 ||
     normalizedPlatformSlugs.length > 0
 
-  const designs = await prisma.design.findMany({
+  const resources = await prisma.design.findMany({
     where,
     take: hasDerivedFacetFilters ? undefined : limit,
     orderBy: { createdAt: "desc" },
@@ -174,16 +178,16 @@ export async function getDesignSummaries(
     },
   })
 
-  const filteredDesigns = hasDerivedFacetFilters
-    ? designs
-        .filter((design) =>
+  const filteredResources = hasDerivedFacetFilters
+    ? resources
+        .filter((resource) =>
           matchesDerivedFacetFilters(
             {
-              title: design.title,
-              description: design.description,
-              content: design.content,
-              categorySlug: design.category?.slug,
-              tags: design.tags.map((entry) => ({ slug: entry.tag.slug, name: entry.tag.name })),
+              title: resource.title,
+              description: resource.description,
+              content: resource.content,
+              categorySlug: resource.category?.slug,
+              tags: resource.tags.map((entry) => ({ slug: entry.tag.slug, name: entry.tag.name })),
             },
             {
               styles: normalizedStyleSlugs,
@@ -194,10 +198,10 @@ export async function getDesignSummaries(
           )
         )
         .slice(0, limit)
-    : designs
+    : resources
 
-  const ratingMap = await getRatingStats(filteredDesigns.map((design) => design.id))
-  return filteredDesigns.map((design) => mapDesignSummary(design, ratingMap))
+  const ratingMap = await getRatingStats(filteredResources.map((resource) => resource.id))
+  return filteredResources.map((resource) => mapResourceSummary(resource, ratingMap))
 }
 
 export async function getForumThreads(limit = 24): Promise<ForumThread[]> {
@@ -218,15 +222,15 @@ export async function getForumThreads(limit = 24): Promise<ForumThread[]> {
       name: comment.author.name,
       handle: comment.author.handle,
     },
-    design: {
+    resource: {
       slug: comment.design.slug,
       title: comment.design.title,
     },
   }))
 }
 
-export async function getDesignDetail(slug: string): Promise<DesignDetail | null> {
-  const design = await prisma.design.findUnique({
+export async function getResourceDetail(slug: string): Promise<ResourceDetail | null> {
+  const resource = await prisma.design.findUnique({
     where: { slug },
     include: {
       author: { select: { id: true, name: true, handle: true } },
@@ -236,35 +240,38 @@ export async function getDesignDetail(slug: string): Promise<DesignDetail | null
     },
   })
 
-  if (!design) return null
+  if (!resource) return null
 
   const rating = await prisma.rating.aggregate({
-    where: { designId: design.id },
+    where: { designId: resource.id },
     _avg: { value: true },
     _count: { _all: true },
   })
 
   return {
-    id: design.id,
-    slug: design.slug,
-    title: design.title,
-    description: design.description,
-    content: design.content,
+    id: resource.id,
+    slug: resource.slug,
+    title: resource.title,
+    description: resource.description,
+    content: resource.content,
+    resourceType: resource.resourceType,
+    toolAgent: resource.toolAgent,
+    scenario: resource.scenario,
     author: {
-      name: design.author.name,
-      handle: design.author.handle,
+      name: resource.author.name,
+      handle: resource.author.handle,
     },
-    tags: design.tags.map((entry) => entry.tag.name),
-    image: design.images[0]?.url,
-    images: design.images.map((image) => ({ url: image.url, caption: image.caption || undefined })),
+    tags: resource.tags.map((entry) => entry.tag.name),
+    image: resource.images[0]?.url,
+    images: resource.images.map((image) => ({ url: image.url, caption: image.caption || undefined })),
     stats: {
-      comments: design._count.comments,
+      comments: resource._count.comments,
       ratings: rating._count._all,
       averageRating: rating._avg.value ?? 0,
     },
-    tone: toneFromString(design.slug),
-    createdAt: design.createdAt,
-    updatedAt: design.updatedAt,
+    tone: toneFromString(resource.slug),
+    createdAt: resource.createdAt,
+    updatedAt: resource.updatedAt,
   }
 }
 
@@ -314,8 +321,8 @@ export async function getAuthorProfile(idOrHandle: string): Promise<AuthorProfil
   }
 }
 
-export async function getDesignsByAuthor(authorId: string): Promise<DesignSummary[]> {
-  const designs = await prisma.design.findMany({
+export async function getResourcesByAuthor(authorId: string): Promise<ResourceSummary[]> {
+  const resources = await prisma.design.findMany({
     where: { authorId },
     orderBy: { createdAt: "desc" },
     include: {
@@ -327,22 +334,22 @@ export async function getDesignsByAuthor(authorId: string): Promise<DesignSummar
     },
   })
 
-  const ratingMap = await getRatingStats(designs.map((design) => design.id))
-  return designs.map((design) => mapDesignSummary(design, ratingMap))
+  const ratingMap = await getRatingStats(resources.map((resource) => resource.id))
+  return resources.map((resource) => mapResourceSummary(resource, ratingMap))
 }
 
-export async function getRelatedDesigns(slug: string, limit = 3): Promise<DesignSummary[]> {
-  const design = await prisma.design.findUnique({
+export async function getRelatedResources(slug: string, limit = 3): Promise<ResourceSummary[]> {
+  const resource = await prisma.design.findUnique({
     where: { slug },
     select: { id: true, categoryId: true },
   })
 
-  if (!design) return []
+  if (!resource) return []
 
-  const designs = await prisma.design.findMany({
+  const resources = await prisma.design.findMany({
     where: {
-      id: { not: design.id },
-      categoryId: design.categoryId || undefined,
+      id: { not: resource.id },
+      categoryId: resource.categoryId || undefined,
     },
     take: limit,
     include: {
@@ -354,9 +361,16 @@ export async function getRelatedDesigns(slug: string, limit = 3): Promise<Design
     },
   })
 
-  const ratingMap = await getRatingStats(designs.map((item) => item.id))
-  return designs.map((item) => mapDesignSummary(item, ratingMap))
+  const ratingMap = await getRatingStats(resources.map((item) => item.id))
+  return resources.map((item) => mapResourceSummary(item, ratingMap))
 }
+
+// Backward-compatible exports while Resource naming is adopted incrementally.
+export const getFeaturedDesigns = getFeaturedResources
+export const getDesignSummaries = getResourceSummaries
+export const getDesignDetail = getResourceDetail
+export const getDesignsByAuthor = getResourcesByAuthor
+export const getRelatedDesigns = getRelatedResources
 
 export async function getHomeHeroStats(): Promise<HomeHeroStats> {
   const { start, end } = getTodayRange()

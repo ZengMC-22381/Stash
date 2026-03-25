@@ -2,6 +2,22 @@
 
 This project uses `GitHub Flow + Codex Worktree`.
 
+## 0. New Thread Context Bootstrap (Recommended)
+To reduce context-window cost on each new thread, use modular context docs:
+
+```bash
+./scripts/context-read.sh --list
+./scripts/context-read.sh core <module-1> <module-2>
+```
+
+Example:
+```bash
+./scripts/context-read.sh core frontend-homepage architecture
+```
+
+Context docs entry:
+- `docs/context/README.md`
+
 ## 1. Team Rules (Must Follow)
 - `main` is always releasable.
 - Never push directly to `main`.
@@ -41,7 +57,7 @@ This project uses `GitHub Flow + Codex Worktree`.
 7. Merge with `Squash and merge`.
 8. Clean local worktree:
    ```bash
-   cd /Users/zeng.m.c/Documents/DESIGN.md
+   cd /Users/zeng.m.c/Documents/Stash
    ./scripts/wt-clean.sh 128-login-page
    ```
 

@@ -3,6 +3,9 @@ import { mkdir, writeFile } from "fs/promises"
 import path from "path"
 import crypto from "crypto"
 import { getUserIdFromRequest } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { RATE_LIMIT_RULES } from "@/lib/rate-limit-rules"
+import { resolveUploadExtension, validateUploadBatch } from "@/lib/upload-policy"
 
 export const runtime = "nodejs"
 
@@ -13,11 +16,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
     }
 
-    const formData = await request.formData()
-    const files = formData.getAll("files")
+    const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.uploadImages, userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many upload attempts. Please try again later." }, {
+        status: 429,
+        headers: rateLimit.headers,
+      })
+    }
 
-    if (!files.length) {
-      return NextResponse.json({ error: "No files uploaded." }, { status: 400 })
+    const formData = await request.formData()
+    const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File)
+
+    const validation = validateUploadBatch(
+      files.map((file) => ({
+        size: file.size,
+        type: file.type,
+        name: file.name,
+      }))
+    )
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads")
@@ -25,18 +43,15 @@ export async function POST(request: NextRequest) {
 
     const uploaded: { url: string; name: string; size: number }[] = []
 
-    for (const entry of files) {
-      if (!(entry instanceof File)) continue
-      if (entry.type && !entry.type.startsWith("image/")) continue
-
-      const arrayBuffer = await entry.arrayBuffer()
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
-      const ext = path.extname(entry.name) || ".png"
+      const ext = resolveUploadExtension({ type: file.type, name: file.name, size: file.size })
       const filename = `${crypto.randomUUID()}${ext}`
       const filePath = path.join(uploadsDir, filename)
 
       await writeFile(filePath, buffer)
-      uploaded.push({ url: `/uploads/${filename}`, name: entry.name, size: entry.size })
+      uploaded.push({ url: `/uploads/${filename}`, name: file.name, size: file.size })
     }
 
     if (!uploaded.length) {

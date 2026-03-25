@@ -9,7 +9,7 @@ export default function SiteFooter({ locale }: Props) {
   const copy =
     locale === "zh"
       ? {
-          description: "面向 DESIGN.md 创作者的高品质社区。发布、Remix、收藏，并展示真实视觉效果。",
+          description: "面向资源创作者的高品质社区。发布、Remix、收藏，并展示真实视觉效果。",
           product: "产品",
           explore: "探索",
           submit: "投稿",
@@ -22,7 +22,7 @@ export default function SiteFooter({ locale }: Props) {
           brandKit: "品牌素材",
           support: "支持",
           guidelines: "规范",
-          rights: "© 2026 ClawHub. 保留所有权利。",
+          rights: "© 2026 Stash. 保留所有权利。",
           privacy: "隐私",
           terms: "条款",
           status: "状态",
@@ -32,7 +32,7 @@ export default function SiteFooter({ locale }: Props) {
         }
       : {
           description:
-            "A premium community for DESIGN.md creators. Publish, remix, and collect design prompts with real visuals.",
+            "A premium community for resource creators. Publish, remix, and collect reusable workflows with real visuals.",
           product: "Product",
           explore: "Explore",
           submit: "Submit",
@@ -45,7 +45,7 @@ export default function SiteFooter({ locale }: Props) {
           brandKit: "Brand Kit",
           support: "Support",
           guidelines: "Guidelines",
-          rights: "© 2026 ClawHub. All rights reserved.",
+          rights: "© 2026 Stash. All rights reserved.",
           privacy: "Privacy",
           terms: "Terms",
           status: "Status",
@@ -62,7 +62,7 @@ export default function SiteFooter({ locale }: Props) {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white shadow-soft">
               C
             </span>
-            ClawHub
+            Stash
           </div>
           <p className="text-sm text-slate-600">{copy.description}</p>
           <div className="flex gap-3 text-xs text-slate-500">

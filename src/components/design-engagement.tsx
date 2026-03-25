@@ -66,8 +66,8 @@ export default function DesignEngagement({ slug, locale }: Props) {
 
   const load = async () => {
     const [commentsRes, ratingsRes] = await Promise.all([
-      fetch(`/api/designs/${slug}/comments`),
-      fetch(`/api/designs/${slug}/ratings`),
+      fetch(`/api/resources/${slug}/comments`),
+      fetch(`/api/resources/${slug}/ratings`),
     ])
 
     if (commentsRes.ok) {
@@ -110,7 +110,7 @@ export default function DesignEngagement({ slug, locale }: Props) {
       setMessage(copy.signInComment)
       return
     }
-    const res = await fetch(`/api/designs/${slug}/comments`, {
+    const res = await fetch(`/api/resources/${slug}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: newComment }),
@@ -130,7 +130,7 @@ export default function DesignEngagement({ slug, locale }: Props) {
       setMessage(copy.signInRate)
       return
     }
-    const res = await fetch(`/api/designs/${slug}/ratings`, {
+    const res = await fetch(`/api/resources/${slug}/ratings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value }),

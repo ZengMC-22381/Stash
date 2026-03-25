@@ -1,47 +1,92 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 type Props = {
   words: string[]
   className?: string
 }
 
+const WORD_SWITCH_INTERVAL_MS = 1000
+const WORD_MOTION_DURATION_MS = 680
+const WORD_ROW_HEIGHT_EM = 1.2
+
 export default function RotatingHeroWord({ words, className }: Props) {
+  const normalizedWords = useMemo(() => (words.length > 0 ? words : [""]), [words])
+  const wordsKey = normalizedWords.join("||")
   const [index, setIndex] = useState(0)
-  const [direction, setDirection] = useState(1)
+  const [enableTransition, setEnableTransition] = useState(true)
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (words.length <= 1) return
+    setIndex(0)
+    setEnableTransition(true)
+  }, [wordsKey])
 
-    const timer = setInterval(() => {
-      setIndex((current) => {
-        const next = current + direction
+  useEffect(() => {
+    if (normalizedWords.length <= 1) return
 
-        if (next >= words.length - 1) {
-          setDirection(-1)
-        } else if (next <= 0) {
-          setDirection(1)
-        }
-
-        return Math.max(0, Math.min(words.length - 1, next))
-      })
-    }, 1000)
+    const timer = setInterval(() => setIndex((current) => current + 1), WORD_SWITCH_INTERVAL_MS)
 
     return () => clearInterval(timer)
-  }, [direction, words.length])
+  }, [normalizedWords.length])
+
+  useEffect(() => {
+    if (normalizedWords.length <= 1) return
+    if (index !== normalizedWords.length) return
+
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current)
+    }
+
+    resetTimerRef.current = setTimeout(() => {
+      setEnableTransition(false)
+      setIndex(0)
+      requestAnimationFrame(() => setEnableTransition(true))
+    }, WORD_MOTION_DURATION_MS)
+
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current)
+        resetTimerRef.current = null
+      }
+    }
+  }, [index, normalizedWords.length])
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current)
+      }
+    }
+  }, [])
+
+  const widestWord = normalizedWords.reduce(
+    (widest, candidate) => (candidate.length > widest.length ? candidate : widest),
+    normalizedWords[0] || "",
+  )
+  const trackWords = normalizedWords.length > 1 ? [...normalizedWords, normalizedWords[0]] : normalizedWords
+  const translateY = -(index * WORD_ROW_HEIGHT_EM)
 
   return (
-    <span className={`inline-flex h-[1.1em] overflow-hidden align-baseline ${className || ""}`}>
-      <span
-        className="flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{ transform: `translateY(-${index * 100}%)` }}
-      >
-        {words.map((word) => (
-          <span key={word} className="block h-[1.1em] whitespace-nowrap">
-            {word}
-          </span>
-        ))}
+    <span className={`inline-flex -mx-[0.08em] px-[0.08em] align-baseline ${className || ""}`}>
+      <span className="relative inline-block h-[1.2em] overflow-hidden align-baseline">
+        <span aria-hidden className="invisible block h-[1.2em] whitespace-nowrap leading-[1.2]">
+          {widestWord}
+        </span>
+        <span
+          className="absolute left-0 top-0 flex flex-col will-change-transform"
+          style={{
+            transform: `translateY(${translateY}em)`,
+            transition: enableTransition ? `transform ${WORD_MOTION_DURATION_MS}ms cubic-bezier(0.22,1,0.36,1)` : "none",
+          }}
+        >
+          {trackWords.map((word, wordIndex) => (
+            <span key={`${word}-${wordIndex}`} className="block h-[1.2em] whitespace-nowrap leading-[1.2]">
+              {word}
+            </span>
+          ))}
+        </span>
       </span>
     </span>
   )
