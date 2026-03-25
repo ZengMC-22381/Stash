@@ -3,6 +3,7 @@ import { JetBrains_Mono, Playfair_Display, Plus_Jakarta_Sans } from "next/font/g
 import "@/app/globals.css"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
+import QuickSearchDock from "@/components/quick-search-dock"
 import { getServerLocale } from "@/lib/server-locale"
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" })
@@ -39,8 +40,9 @@ export default async function RootLayout({
       <body className="font-sans">
         <div className="min-h-screen bg-white text-slate-900">
           <SiteHeader locale={locale} />
-          <main>{children}</main>
+          <main className="pt-[65px]">{children}</main>
           <SiteFooter locale={locale} />
+          <QuickSearchDock locale={locale} />
         </div>
       </body>
     </html>

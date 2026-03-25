@@ -7,9 +7,15 @@ import type { Locale } from "@/lib/locale"
 type Props = {
   locale: Locale
   mobile?: boolean
+  className?: string
+  variant?: "default" | "segmented" | "header"
 }
 
-export default function HeaderMenu({ locale, mobile = false }: Props) {
+function merge(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ")
+}
+
+export default function HeaderMenu({ locale, mobile = false, className, variant = "default" }: Props) {
   const pathname = usePathname()
   const items =
     locale === "zh"
@@ -29,8 +35,58 @@ export default function HeaderMenu({ locale, mobile = false }: Props) {
     return pathname === href || pathname.startsWith(`${href}/`)
   }
 
+  if (variant === "segmented") {
+    return (
+      <nav
+        className={merge(
+          "inline-flex h-full items-center rounded-full border border-[rgba(175,178,179,0.1)] bg-[rgba(243,244,244,0.5)] p-[5px]",
+          className
+        )}
+      >
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={merge(
+              "rounded-full px-6 py-2 text-[14px] font-bold leading-5 transition",
+              isActive(item.href)
+                ? "bg-white text-[#615b7c] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]"
+                : "text-[#5c6060] hover:text-[#2f3334]"
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    )
+  }
+
+  if (variant === "header") {
+    return (
+      <nav className={merge("inline-flex h-full items-center gap-2", className)}>
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={merge(
+              "inline-flex h-9 w-[52px] items-center justify-center rounded-full text-[14px] font-medium leading-5 transition",
+              isActive(item.href) ? "text-[#334155]" : "text-[#475569] hover:text-[#334155]"
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    )
+  }
+
   return (
-    <nav className={mobile ? "flex flex-wrap items-center gap-2" : "hidden items-center gap-2 lg:flex"}>
+    <nav
+      className={merge(
+        mobile ? "flex flex-wrap items-center gap-2" : "hidden items-center gap-2 lg:flex",
+        className
+      )}
+    >
       {items.map((item) => (
         <Link
           key={item.href}

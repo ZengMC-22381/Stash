@@ -19,6 +19,8 @@ model User {
   comments     Comment[]
   ratings      Rating[]
   bookmarks    Bookmark[]
+  likes        Like[]
+  copyEvents   CopyEvent[]
 }
 
 model Category {
@@ -38,25 +40,34 @@ model Tag {
 }
 
 model Design {
-  id          String        @id @default(cuid())
-  slug        String        @unique
-  title       String
-  description String
-  content     String
-  authorId    String
-  author      User          @relation(fields: [authorId], references: [id])
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  description    String
+  content        String
+  resourceType   String        @default("design-md")
+  toolAgent      String?
+  scenario       String?
+  authorId       String
+  author         User          @relation(fields: [authorId], references: [id])
   parentDesignId String?
   parentDesign   Design?     @relation("DesignRemix", fields: [parentDesignId], references: [id])
   remixes        Design[]    @relation("DesignRemix")
-  categoryId  String?
-  category    Category?     @relation(fields: [categoryId], references: [id])
-  images      DesignImage[]
-  tags        DesignTag[]
-  comments    Comment[]
-  ratings     Rating[]
-  bookmarks   Bookmark[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  categoryId     String?
+  category       Category?     @relation(fields: [categoryId], references: [id])
+  images         DesignImage[]
+  tags           DesignTag[]
+  comments       Comment[]
+  ratings        Rating[]
+  bookmarks      Bookmark[]
+  likes          Like[]
+  copyEvents     CopyEvent[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([resourceType])
+  @@index([toolAgent])
+  @@index([scenario])
 }
 
 model DesignImage {
@@ -108,4 +119,26 @@ model Bookmark {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([designId, userId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  designId  String
+  userId    String
+  createdAt DateTime @default(now())
+  design    Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([designId, userId])
+}
+
+model CopyEvent {
+  id        String   @id @default(cuid())
+  designId  String?
+  userId    String?
+  createdAt DateTime @default(now())
+  design    Design?  @relation(fields: [designId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }

@@ -60,6 +60,9 @@ export async function POST(request: NextRequest, context: RouteProps) {
         authorId: userId,
         parentDesignId: baseDesign.id,
         categoryId: baseDesign.categoryId,
+        resourceType: baseDesign.resourceType,
+        toolAgent: baseDesign.toolAgent,
+        scenario: baseDesign.scenario,
         tags: {
           create: baseDesign.tags.map((entry) => ({
             tag: { connect: { id: entry.tagId ?? entry.tag.id } },

@@ -1,12 +1,14 @@
 import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { localizeTopic, type Locale } from "@/lib/locale"
+import { matchesDerivedFacetFilters } from "@/lib/search-facets"
 import { toneFromString } from "@/lib/tone"
 import type { AuthorProfile, DesignDetail, DesignSummary, Topic } from "@/types/design"
 
 type DesignSummaryRow = Prisma.DesignGetPayload<{
   include: {
     author: { select: { id: true; name: true; handle: true } }
+    category: { select: { slug: true } }
     tags: { include: { tag: true } }
     images: true
     _count: { select: { comments: true; ratings: true } }
@@ -15,6 +17,11 @@ type DesignSummaryRow = Prisma.DesignGetPayload<{
 
 type GetDesignSummariesOptions = {
   search?: string
+  typeSlugs?: string[]
+  styleSlugs?: string[]
+  frameworkSlugs?: string[]
+  fontSlugs?: string[]
+  platformSlugs?: string[]
 }
 
 export type ForumThread = {
@@ -29,6 +36,20 @@ export type ForumThread = {
     slug: string
     title: string
   }
+}
+
+export type HomeHeroStats = {
+  todayCopyCount: number
+  contributorCount: number
+}
+
+function getTodayRange(now = new Date()) {
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return { start, end }
 }
 
 async function getRatingStats(ids: string[]) {
@@ -77,6 +98,7 @@ export async function getFeaturedDesigns(limit = 6): Promise<DesignSummary[]> {
     orderBy: { ratings: { _count: "desc" } },
     include: {
       author: { select: { id: true, name: true, handle: true } },
+      category: { select: { slug: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
@@ -92,30 +114,90 @@ export async function getDesignSummaries(
   options: GetDesignSummariesOptions = {}
 ): Promise<DesignSummary[]> {
   const search = options.search?.trim()
-  const where: Prisma.DesignWhereInput | undefined = search
-    ? {
-        OR: [
-          { title: { contains: search } },
-          { description: { contains: search } },
-          { content: { contains: search } },
-        ],
-      }
-    : undefined
+  const normalizedTypeSlugs = Array.from(
+    new Set((options.typeSlugs || []).map((item) => item.trim()).filter(Boolean))
+  )
+  const normalizedStyleSlugs = Array.from(
+    new Set((options.styleSlugs || []).map((item) => item.trim().toLowerCase()).filter(Boolean))
+  )
+  const normalizedFrameworkSlugs = Array.from(
+    new Set((options.frameworkSlugs || []).map((item) => item.trim().toLowerCase()).filter(Boolean))
+  )
+  const normalizedFontSlugs = Array.from(
+    new Set((options.fontSlugs || []).map((item) => item.trim().toLowerCase()).filter(Boolean))
+  )
+  const normalizedPlatformSlugs = Array.from(
+    new Set((options.platformSlugs || []).map((item) => item.trim().toLowerCase()).filter(Boolean))
+  )
+
+  const whereClauses: Prisma.DesignWhereInput[] = []
+
+  if (search) {
+    whereClauses.push({
+      OR: [
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { content: { contains: search } },
+      ],
+    })
+  }
+
+  if (normalizedTypeSlugs.length > 0) {
+    whereClauses.push({
+      category: {
+        slug: {
+          in: normalizedTypeSlugs,
+        },
+      },
+    })
+  }
+
+  const where: Prisma.DesignWhereInput | undefined =
+    whereClauses.length === 0 ? undefined : whereClauses.length === 1 ? whereClauses[0] : { AND: whereClauses }
+
+  const hasDerivedFacetFilters =
+    normalizedStyleSlugs.length > 0 ||
+    normalizedFrameworkSlugs.length > 0 ||
+    normalizedFontSlugs.length > 0 ||
+    normalizedPlatformSlugs.length > 0
 
   const designs = await prisma.design.findMany({
     where,
-    take: limit,
+    take: hasDerivedFacetFilters ? undefined : limit,
     orderBy: { createdAt: "desc" },
     include: {
       author: { select: { id: true, name: true, handle: true } },
+      category: { select: { slug: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
     },
   })
 
-  const ratingMap = await getRatingStats(designs.map((design) => design.id))
-  return designs.map((design) => mapDesignSummary(design, ratingMap))
+  const filteredDesigns = hasDerivedFacetFilters
+    ? designs
+        .filter((design) =>
+          matchesDerivedFacetFilters(
+            {
+              title: design.title,
+              description: design.description,
+              content: design.content,
+              categorySlug: design.category?.slug,
+              tags: design.tags.map((entry) => ({ slug: entry.tag.slug, name: entry.tag.name })),
+            },
+            {
+              styles: normalizedStyleSlugs,
+              frameworks: normalizedFrameworkSlugs,
+              fonts: normalizedFontSlugs,
+              platforms: normalizedPlatformSlugs,
+            }
+          )
+        )
+        .slice(0, limit)
+    : designs
+
+  const ratingMap = await getRatingStats(filteredDesigns.map((design) => design.id))
+  return filteredDesigns.map((design) => mapDesignSummary(design, ratingMap))
 }
 
 export async function getForumThreads(limit = 24): Promise<ForumThread[]> {
@@ -238,6 +320,7 @@ export async function getDesignsByAuthor(authorId: string): Promise<DesignSummar
     orderBy: { createdAt: "desc" },
     include: {
       author: { select: { id: true, name: true, handle: true } },
+      category: { select: { slug: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
@@ -264,6 +347,7 @@ export async function getRelatedDesigns(slug: string, limit = 3): Promise<Design
     take: limit,
     include: {
       author: { select: { id: true, name: true, handle: true } },
+      category: { select: { slug: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
@@ -272,4 +356,25 @@ export async function getRelatedDesigns(slug: string, limit = 3): Promise<Design
 
   const ratingMap = await getRatingStats(designs.map((item) => item.id))
   return designs.map((item) => mapDesignSummary(item, ratingMap))
+}
+
+export async function getHomeHeroStats(): Promise<HomeHeroStats> {
+  const { start, end } = getTodayRange()
+
+  const [todayCopyCount, contributorCount] = await Promise.all([
+    prisma.copyEvent.count({
+      where: {
+        createdAt: {
+          gte: start,
+          lt: end,
+        },
+      },
+    }),
+    prisma.user.count(),
+  ])
+
+  return {
+    todayCopyCount,
+    contributorCount,
+  }
 }

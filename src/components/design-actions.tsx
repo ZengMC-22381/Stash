@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Copy, Heart, Layers } from "lucide-react"
+import { Bookmark, Copy, Heart, Layers } from "lucide-react"
 import type { Locale } from "@/lib/locale"
 
 type Props = {
@@ -15,13 +15,17 @@ export default function DesignActions({ slug, content, locale }: Props) {
   const copy =
     locale === "zh"
       ? {
-          signInSave: "请先登录后再收藏 DESIGN.md。",
+          signInLike: "请先登录后再点赞资源。",
+          likeFailed: "点赞状态更新失败。",
+          signInSave: "请先登录后再收藏资源。",
           saveFailed: "收藏状态更新失败。",
-          copySuccess: "已复制 DESIGN.md 内容。",
+          copySuccess: "已复制资源内容。",
           copyFailed: "复制失败，请重试。",
           signInRemix: "请先登录后再 Remix。",
           remixFailed: "Remix 失败。",
           remixed: "Remix 已创建。",
+          liked: "已点赞",
+          like: "点赞",
           saved: "已收藏",
           save: "收藏",
           copied: "已复制",
@@ -29,13 +33,17 @@ export default function DesignActions({ slug, content, locale }: Props) {
           remix: "Remix",
         }
       : {
-          signInSave: "Please sign in to save this DESIGN.md.",
-          saveFailed: "Unable to update save.",
-          copySuccess: "Copied DESIGN.md content.",
+          signInLike: "Please sign in to like this resource.",
+          likeFailed: "Unable to update like state.",
+          signInSave: "Please sign in to save this resource.",
+          saveFailed: "Unable to update save state.",
+          copySuccess: "Copied resource content.",
           copyFailed: "Copy failed. Try again.",
           signInRemix: "Please sign in to remix.",
           remixFailed: "Unable to remix.",
           remixed: "Remix created.",
+          liked: "Liked",
+          like: "Like",
           saved: "Saved",
           save: "Save",
           copied: "Copied",
@@ -46,7 +54,9 @@ export default function DesignActions({ slug, content, locale }: Props) {
   const router = useRouter()
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [saved, setSaved] = useState(false)
-  const [total, setTotal] = useState<number | null>(null)
+  const [saveTotal, setSaveTotal] = useState<number | null>(null)
+  const [liked, setLiked] = useState(false)
+  const [likeTotal, setLikeTotal] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle")
@@ -55,17 +65,29 @@ export default function DesignActions({ slug, content, locale }: Props) {
     setMessage(null)
     const load = async () => {
       try {
-        const [meRes, bookmarkRes] = await Promise.all([fetch("/api/auth/me"), fetch(`/api/designs/${slug}/bookmark`)])
+        const [meRes, bookmarkRes, likeRes] = await Promise.all([
+          fetch("/api/auth/me"),
+          fetch(`/api/resources/${slug}/bookmark`),
+          fetch(`/api/resources/${slug}/likes`),
+        ])
+
         if (meRes.ok) {
           const data = await meRes.json()
           setUser(data.user || null)
         } else {
           setUser(null)
         }
+
         if (bookmarkRes.ok) {
           const data = await bookmarkRes.json()
           setSaved(Boolean(data.saved))
-          setTotal(typeof data.total === "number" ? data.total : null)
+          setSaveTotal(typeof data.total === "number" ? data.total : null)
+        }
+
+        if (likeRes.ok) {
+          const data = await likeRes.json()
+          setLiked(Boolean(data.liked))
+          setLikeTotal(typeof data.total === "number" ? data.total : null)
         }
       } catch {
         // ignore
@@ -74,22 +96,47 @@ export default function DesignActions({ slug, content, locale }: Props) {
     load()
   }, [slug])
 
+  const handleLike = async () => {
+    setMessage(null)
+    if (!user) {
+      setMessage(copy.signInLike)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/resources/${slug}/likes`, { method: liked ? "DELETE" : "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        setMessage(data.error || copy.likeFailed)
+        return
+      }
+      setLiked(Boolean(data.liked))
+      setLikeTotal(typeof data.total === "number" ? data.total : null)
+    } catch {
+      setMessage(copy.likeFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSave = async () => {
     setMessage(null)
     if (!user) {
       setMessage(copy.signInSave)
       return
     }
+
     setLoading(true)
     try {
-      const res = await fetch(`/api/designs/${slug}/bookmark`, { method: saved ? "DELETE" : "POST" })
+      const res = await fetch(`/api/resources/${slug}/bookmark`, { method: saved ? "DELETE" : "POST" })
       const data = await res.json()
       if (!res.ok) {
         setMessage(data.error || copy.saveFailed)
         return
       }
       setSaved(Boolean(data.saved))
-      setTotal(typeof data.total === "number" ? data.total : null)
+      setSaveTotal(typeof data.total === "number" ? data.total : null)
     } catch {
       setMessage(copy.saveFailed)
     } finally {
@@ -111,6 +158,15 @@ export default function DesignActions({ slug, content, locale }: Props) {
         textarea.select()
         document.execCommand("copy")
         document.body.removeChild(textarea)
+      }
+      try {
+        await fetch("/api/copies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug }),
+        })
+      } catch {
+        // ignore tracking failures
       }
       setCopyState("copied")
       setMessage(copy.copySuccess)
@@ -151,17 +207,27 @@ export default function DesignActions({ slug, content, locale }: Props) {
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <button
           type="button"
-          onClick={handleSave}
+          onClick={handleLike}
           disabled={loading}
           className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition ${
-            saved
-              ? "border-primary bg-primary text-white"
-              : "border-border bg-white text-slate-600 hover:border-primary"
+            liked ? "border-primary bg-primary text-white" : "border-border bg-white text-slate-600 hover:border-primary"
           }`}
         >
           <Heart className="h-4 w-4" />
+          {liked ? copy.liked : copy.like}
+          {typeof likeTotal === "number" ? <span className="ml-1 text-[11px] opacity-80">{likeTotal}</span> : null}
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={loading}
+          className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition ${
+            saved ? "border-primary bg-primary text-white" : "border-border bg-white text-slate-600 hover:border-primary"
+          }`}
+        >
+          <Bookmark className="h-4 w-4" />
           {saved ? copy.saved : copy.save}
-          {typeof total === "number" ? <span className="ml-1 text-[11px] opacity-80">{total}</span> : null}
+          {typeof saveTotal === "number" ? <span className="ml-1 text-[11px] opacity-80">{saveTotal}</span> : null}
         </button>
         <button
           type="button"

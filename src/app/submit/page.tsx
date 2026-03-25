@@ -11,27 +11,27 @@ export default async function SubmitPage() {
     locale === "zh"
       ? {
           section: "投稿",
-          title: "发布你的 DESIGN.md",
-          subtitle: "上传你的 Prompt 与效果图，让社区快速浏览、收藏与 Remix。",
+          title: "发布你的资源",
+          subtitle: "上传你的 .md、Prompt、Skill 或工作流，让社区快速浏览、点赞、收藏与 Remix。",
           guideline: "投稿建议",
           guidelineTitle: "让内容更易 Remix",
           guidelineDesc: "建议使用清晰分节，并明确描述输出布局与风格目标。",
           tip: "创作者提示",
           tipDesc: "添加 2-3 个输出变体，通常会获得更多收藏与 Remix。",
           next: "接下来会发生什么？",
-          nextDesc: "你的 DESIGN.md 会即时上线，社区策展人可能将其加入精选。",
+          nextDesc: "你的资源会即时上线到探索页，社区策展人可能将其加入精选。",
         }
       : {
           section: "Submit",
-          title: "Publish your DESIGN.md",
-          subtitle: "Publish your prompt, attach the output visuals, and let the community remix your work.",
+          title: "Publish your resource",
+          subtitle: "Publish your .md, prompt, skill, or workflow and let the community browse, like, save, and remix it.",
           guideline: "Guidelines",
           guidelineTitle: "Make it remixable",
           guidelineDesc: "Use clear sections and describe the output layout.",
           tip: "Creator Tip",
           tipDesc: "Add 2-3 output variations to increase saves and remixes.",
           next: "What happens next?",
-          nextDesc: "Your DESIGN.md goes live instantly. Curators may feature it.",
+          nextDesc: "Your resource goes live instantly on Explore. Curators may feature it.",
         }
 
   return (
