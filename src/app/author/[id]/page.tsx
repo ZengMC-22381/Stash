@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { notFound } from "next/navigation"
 import DesignCard from "@/components/design-card"
-import { getAuthorProfile, getDesignsByAuthor } from "@/lib/data"
+import { getAuthorProfile, getResourcesByAuthor } from "@/lib/data"
 import { getServerLocale } from "@/lib/server-locale"
 
 const container = "mx-auto w-full max-w-[1100px] px-6"
@@ -19,23 +19,23 @@ export default async function AuthorPage({ params }: PageProps) {
     notFound()
   }
 
-  const designs = await getDesignsByAuthor(author.id)
+  const resources = await getResourcesByAuthor(author.id)
 
   const copy =
     locale === "zh"
       ? {
           creator: "创作者",
-          bioFallback: "专注为现代产品团队创作高质量 DESIGN.md 方案。",
+          bioFallback: "专注为现代产品团队创作高质量资源方案。",
           badge1: "高热作者",
           badge2: "编辑感",
           badge3: "社区共创",
-          designs: "作品",
+          designs: "资源",
           comments: "评论",
           ratings: "评分",
           follow: "关注",
           message: "私信",
           portfolio: "作品集",
-          published: "已发布 DESIGN.md",
+          published: "已发布资源",
           viewAll: "查看全部",
           remixQueue: "Remix 候选",
           remixTitle: `加入 ${author.name} 的 Remix 圈`,
@@ -45,17 +45,17 @@ export default async function AuthorPage({ params }: PageProps) {
         }
       : {
           creator: "Creator",
-          bioFallback: "Designing premium DESIGN.md prompts for modern product teams.",
+          bioFallback: "Building premium resources for modern product teams.",
           badge1: "Top Creator",
           badge2: "Editorial",
           badge3: "Community",
-          designs: "Designs",
+          designs: "Resources",
           comments: "Comments",
           ratings: "Ratings",
           follow: "Follow",
           message: "Message",
           portfolio: "Portfolio",
-          published: "Published DESIGN.md",
+          published: "Published Resources",
           viewAll: "View all",
           remixQueue: "Remix Queue",
           remixTitle: `Join ${author.name}'s remix circle`,
@@ -126,8 +126,8 @@ export default async function AuthorPage({ params }: PageProps) {
           </Link>
         </div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {designs.map((design) => (
-            <DesignCard key={design.id} design={design} locale={locale} />
+          {resources.map((resource) => (
+            <DesignCard key={resource.id} resource={resource} locale={locale} />
           ))}
         </div>
       </section>

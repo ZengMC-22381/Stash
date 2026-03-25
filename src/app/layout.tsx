@@ -14,14 +14,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale()
   if (locale === "zh") {
     return {
-      title: "ClawHub · DESIGN.md 中文社区",
-      description: "发现、发布与 Remix DESIGN.md，并查看对应的真实界面效果图。",
+      title: "Stash · 资源创作者社区",
+      description: "发现、发布与 Remix 资源，并查看对应的真实效果图。",
     }
   }
 
   return {
-    title: "ClawHub · DESIGN.md Community",
-    description: "Discover, share, and remix DESIGN.md prompts with matching UI outputs.",
+    title: "Stash · Resource Creator Community",
+    description: "Discover, publish, and remix resources with matching real-world outputs.",
   }
 }
 

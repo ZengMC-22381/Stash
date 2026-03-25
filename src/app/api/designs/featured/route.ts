@@ -5,7 +5,7 @@ export const runtime = "nodejs"
 
 export async function GET() {
   try {
-    const designs = await prisma.design.findMany({
+    const resources = await prisma.design.findMany({
       take: 6,
       orderBy: { ratings: { _count: "desc" } },
       include: {
@@ -17,9 +17,9 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json({ designs })
+    return NextResponse.json({ resources, designs: resources })
   } catch (error) {
     console.error("[DESIGNS_FEATURED]", error)
-    return NextResponse.json({ error: "Failed to load featured designs." }, { status: 500 })
+    return NextResponse.json({ error: "Failed to load featured resources." }, { status: 500 })
   }
 }

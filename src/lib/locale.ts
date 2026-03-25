@@ -1,4 +1,4 @@
-export const LOCALE_COOKIE_NAME = "clawhub_locale"
+export const LOCALE_COOKIE_NAME = "stash_locale"
 export const DEFAULT_LOCALE = "zh"
 
 export const SUPPORTED_LOCALES = ["zh", "en"] as const

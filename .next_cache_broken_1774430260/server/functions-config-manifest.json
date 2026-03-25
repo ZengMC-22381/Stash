@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/categories": {},
+    "/api/auth/login": {},
+    "/api/auth/register": {},
+    "/api/auth/me": {},
+    "/api/copies": {},
+    "/api/designs/[slug]/comments": {},
+    "/api/designs/[slug]/likes": {},
+    "/api/auth/logout": {},
+    "/api/designs/featured": {},
+    "/api/designs/[slug]": {},
+    "/api/designs/[slug]/ratings": {},
+    "/api/locale": {},
+    "/api/designs/[slug]/bookmark": {},
+    "/api/designs": {},
+    "/api/resources/dictionary": {},
+    "/api/search-facets": {},
+    "/api/uploads": {},
+    "/api/designs/[slug]/remix": {}
+  }
+}

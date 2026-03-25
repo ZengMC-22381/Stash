@@ -1,144 +1,65 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
-import { ArrowRight, Copy, Heart, Layers, Sparkles } from "lucide-react"
-import DesignCard from "@/components/design-card"
-import TopicCard from "@/components/topic-card"
+import { ArrowRight, Sparkles } from "lucide-react"
+import HomeResourceStream from "@/components/home-resource-stream"
 import RotatingHeroWord from "@/components/rotating-hero-word"
-import { getDesignDetail, getFeaturedDesigns, getHomeHeroStats, getTopics } from "@/lib/data"
+import { getHomeHeroStats } from "@/lib/data"
 import { getServerLocale } from "@/lib/server-locale"
-
-const container = "mx-auto w-full max-w-[1100px] px-6"
-
-const fallbackDocZh = `# DESIGN.md
-
-## 目标
-为现代 SaaS 团队打造高级感新手引导体验。
-
-## 视觉语言
-- 强排版与编辑感标题
-- 柔和渐变点缀
-- 大圆角卡片与胶囊按钮
-- 悬浮与微动效
-
-## 布局结构
-1. 主视觉 + 双 CTA
-2. 三步引导卡片
-3. 功能亮点网格
-4. 头像社证明带
-`
-
-const fallbackDocEn = `# DESIGN.md
-
-## Purpose
-Craft a premium onboarding experience for modern SaaS teams.
-
-## Visual Language
-- Editorial typography
-- Soft gradient accents
-- Rounded cards and pill buttons
-- Gentle motion on hover
-
-## Layout Structure
-1. Hero headline with dual CTA
-2. Step-by-step onboarding cards
-3. Feature grid with short labels
-4. Social proof band with avatars
-`
 
 export default async function Home() {
   const locale = await getServerLocale()
-  const [featuredDesigns, topics, heroStats] = await Promise.all([
-    getFeaturedDesigns(4),
-    getTopics(locale),
-    getHomeHeroStats(),
-  ])
-  const preview = featuredDesigns[0] ? await getDesignDetail(featuredDesigns[0].slug) : null
+  const heroStats = await getHomeHeroStats()
   const numberLocale = locale === "zh" ? "zh-CN" : "en-US"
 
   const copy =
     locale === "zh"
       ? {
-          heroBadge: "把AI时代的设计逻辑，变成可展示的资产",
           titleA: "发现真正有效的",
-          heroWords: ["DESIGN.md", "Skill", "设计Agent"],
+          heroWords: ["DESIGN.md", "Skill", "Agent"],
           subtitle: "分享真正可直接使用的、AI时代的设计技巧。",
-          ctaExplore: "浏览设计",
-          ctaSubmit: "投稿 DESIGN.md",
+          ctaExplore: "探索AI设计技巧",
+          ctaSubmit: "提交作品",
           trending: "趋势",
           today: "今天",
           copies: "复制次数",
-          heroTags: ["SaaS", "极简", "呼吸感"],
-          contributorsSuffix: "位 贡献者",
-          featured: "精选",
-          featuredTitle: "精选 DESIGN.md",
-          viewAll: "查看全部",
-          browse: "分类浏览",
-          browseTitle: "按主题浏览",
-          detailPreview: "详情预览",
-          detailTitle: "DESIGN.md + 效果图",
-          like: "点赞",
-          copy: "复制",
-          remix: "Remix",
-          updated2d: "2 天前更新",
-          view: "查看",
-          community: "社区",
-          publishToday: "今天就发布你的 DESIGN.md",
-          publishDesc: "上传 Prompt 并附上效果图，让社区基于你的思路继续 Remix。",
-          submitDesign: "立即投稿",
-          learnMore: "了解更多",
-          previewFallbackA: "主视觉",
-          previewFallbackB: "引导步骤",
-          previewFallbackC: "功能网格",
-          previewOutput: "效果",
-          previewTagLine: "SaaS / 极简 / 编辑感",
+          contributorsSuffix: "位贡献者",
+          badgeResource: "DESIGN.md",
+          badgeSkill: "Design Skill",
+          floatingCardLabel: "Simple",
+          floatingCardTitle: "Design System",
+          floatingCardTagA: "Minimal",
+          floatingCardTagB: "Bento",
+          floatingCardTime: "Today",
+          floatingCardUpdated: "Updated 8:00 AM",
+          heroTagA: "SaaS",
+          heroTagB: "极简",
+          heroTagC: "呼吸感",
         }
       : {
-          heroBadge: "Turn AI-era design logic into reusable assets",
           titleA: "Discover what actually works",
-          heroWords: ["DESIGN.md", "Skill", "Design Agent"],
+          heroWords: ["DESIGN.md", "Skill", "Agent"],
           subtitle: "Share practical, ready-to-use design workflows for the AI era.",
-          ctaExplore: "Explore Designs",
-          ctaSubmit: "Submit Your DESIGN.md",
+          ctaExplore: "Explore AI Design Skills",
+          ctaSubmit: "Submit Resource",
           trending: "Trending",
           today: "Today",
           copies: "copies",
-          heroTags: ["SaaS", "Minimal", "Airy"],
           contributorsSuffix: "contributors",
-          featured: "Featured",
-          featuredTitle: "Featured DESIGN.md",
-          viewAll: "View all",
-          browse: "Browse",
-          browseTitle: "Browse by Topic",
-          detailPreview: "Detail Preview",
-          detailTitle: "DESIGN.md + Output",
-          like: "Like",
-          copy: "Copy",
-          remix: "Remix",
-          updated2d: "Updated 2 days ago",
-          view: "View",
-          community: "Community",
-          publishToday: "Publish your DESIGN.md today",
-          publishDesc: "Share a prompt, attach the output, and let the community remix it into new variations.",
-          submitDesign: "Submit a DESIGN.md",
-          learnMore: "Learn more",
-          previewFallbackA: "Hero",
-          previewFallbackB: "Onboarding Steps",
-          previewFallbackC: "Feature Grid",
-          previewOutput: "Output",
+          badgeResource: "DESIGN.md",
+          badgeSkill: "Design Skill",
+          floatingCardLabel: "Simple",
+          floatingCardTitle: "Design System",
+          floatingCardTagA: "Minimal",
+          floatingCardTagB: "Bento",
+          floatingCardTime: "Today",
+          floatingCardUpdated: "Updated 8:00 AM",
+          heroTagA: "SaaS",
+          heroTagB: "Minimal",
+          heroTagC: "Airy",
         }
 
-  const previewItems = preview?.images?.length
-    ? preview.images.slice(0, 3).map((image, index) => ({
-        label: image.caption || `${copy.previewOutput} ${index + 1}`,
-        image: image.url,
-      }))
-    : [
-        { label: copy.previewFallbackA, image: null },
-        { label: copy.previewFallbackB, image: null },
-        { label: copy.previewFallbackC, image: null },
-      ]
   const todayCopyCountLabel = heroStats.todayCopyCount.toLocaleString(numberLocale)
   const contributorCountLabel = `${heroStats.contributorCount.toLocaleString(numberLocale)} ${copy.contributorsSuffix}`
+
   const heroContributorTones = [
     "from-[#6C47FF] via-[#8B5CF6] to-[#FF6B97]",
     "from-[#3B82F6] via-[#60A5FA] to-[#10B981]",
@@ -147,105 +68,57 @@ export default async function Home() {
   ]
 
   return (
-    <div className="space-y-24 pb-24">
-      <section className="relative border-b border-border bg-[linear-gradient(152.705deg,_#F8F4FF_0%,_#FFF4F8_50%,_#F4F8FF_100%)] px-6 pb-14 pt-24 lg:px-[89.5px] lg:pb-[56px] lg:pt-[128px]">
-        <div className="mx-auto grid w-full max-w-[1100px] gap-16 lg:grid-cols-[501px_535px] lg:items-center">
-          <div className="space-y-5">
-            <div className="inline-flex items-center justify-center rounded-full border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] py-2 text-[11px] font-semibold uppercase tracking-[2.2px] text-[#7847ff]">
-              {copy.heroBadge}
-            </div>
-            <div className="space-y-0">
-              <h1 className="text-[56px] font-black leading-[1.05] tracking-[-0.05em] text-[#2f3334] lg:text-[72px] lg:leading-[72px]">
+    <div className="bg-[#f9f9f9] pb-6">
+      <section className="relative overflow-hidden pt-0">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(58%_74%_at_75%_14%,rgba(226,218,255,0.92)_0%,rgba(226,218,255,0)_72%),radial-gradient(54%_68%_at_22%_78%,rgba(255,226,236,0.9)_0%,rgba(255,226,236,0)_74%),linear-gradient(180deg,#f7f7fb_0%,#f8f8fb_28%,#f9f9f9_100%)]" />
+        </div>
+
+        <div className="relative mx-auto h-[600px] w-full max-w-[1280px] px-4 sm:px-6 lg:px-0">
+          <div className="relative z-10 mx-auto flex h-full w-full max-w-[708px] flex-col items-center justify-center gap-10 px-6 text-center">
+            <div className="space-y-0 leading-none tracking-[-0.05em]">
+              <h1 className="mx-auto max-w-[540px] text-[56px] font-black leading-[1.02] text-[#2f3334] md:text-[72px] md:leading-[72px]">
                 {copy.titleA}
               </h1>
-              <div className="font-display text-[56px] italic leading-[1.05] tracking-[-0.05em] text-[#7847ff] lg:text-[72px] lg:leading-[72px]">
+              <div className="mx-auto max-w-[540px] font-display text-[56px] italic leading-[1.02] text-[#575172] md:text-[72px] md:leading-[72px]">
                 <RotatingHeroWord words={copy.heroWords} />
               </div>
             </div>
-            <p className="max-w-[576px] text-[18px] leading-7 text-[#475569]">{copy.subtitle}</p>
-            <div className="flex h-[44px] items-center gap-4">
+
+            <p className="mx-auto max-w-[660px] text-[18px] leading-7 text-[#5c6060] md:text-[20px]">{copy.subtitle}</p>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <Link
                 href="/explore"
-                className="inline-flex h-11 items-center gap-2 rounded-full bg-[#7847ff] px-6 text-sm font-semibold text-white shadow-float transition duration-150 hover:brightness-105 active:scale-[0.97]"
+                className="inline-flex h-[68px] items-center justify-center rounded-full bg-[#2f3334] px-10 text-[18px] font-semibold text-[#f9f9f9] shadow-[0px_20px_40px_-10px_rgba(0,0,0,0.2)] transition hover:brightness-110"
               >
                 {copy.ctaExplore}
-                <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/submit"
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-6 text-sm font-semibold text-[#334155] shadow-soft transition duration-150 hover:border-[#b8bfd0]"
+                className="inline-flex h-[70px] items-center gap-2 rounded-full border border-[#e2e8f0] bg-white px-10 text-[18px] font-medium text-[#2f3334] transition hover:border-[#cbd5e1]"
               >
                 {copy.ctaSubmit}
-                <Sparkles className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
 
-          <div className="relative h-[476px] w-full max-w-[535px]">
-            <div className="absolute inset-0 rounded-[48px] bg-[linear-gradient(133.692deg,_#E6DEFF_0%,_#FFE5EC_100%)] opacity-20 blur-[32px]" />
-            <div className="absolute inset-0 animate-float-slow overflow-visible rounded-[48px] border border-[rgba(175,178,179,0.1)] bg-white p-[13px] shadow-[0px_20px_40px_-5px_rgba(47,51,52,0.05)]">
-              <div className="grid h-[450px] grid-cols-2 overflow-hidden rounded-[32px]">
-                <div className="border-r border-[rgba(255,255,255,0.05)] bg-[#1e1e1e] px-8 py-8 text-[14px] leading-5">
-                  <pre className="whitespace-pre-wrap text-[#e6deff]">{`# Design Configuration`}</pre>
-                  <pre className="mt-2 whitespace-pre-wrap text-[#ffe5ec]">{`preset: "minimalist-saas"`}</pre>
-                  <pre className="mt-2 whitespace-pre-wrap text-white">{`layout: {`}</pre>
-                  <pre className="pl-4 text-[#d1d5db]">{`spacing: "extra-loose",`}</pre>
-                  <pre className="pl-4 text-[#d1d5db]">{`radius: "full",`}</pre>
-                  <pre className="pl-4 text-[#d1d5db]">{`surfaces: ["glass", "tonal"]`}</pre>
-                  <pre className="text-white">{`}`}</pre>
-                  <pre className="mt-2 text-[#e6deff]">{`colors: {`}</pre>
-                  <pre className="pl-4 text-[#c084fc]">{`primary: "#615b7c",`}</pre>
-                  <pre className="pl-4 text-[#f9a8d4]">{`accent: "#ffe5ec"`}</pre>
-                  <pre className="text-[#e6deff]">{`}`}</pre>
-                </div>
-                <div className="space-y-4 bg-white p-6">
-                  <div className="h-8 w-32 rounded-full bg-[#f3f4f4]" />
-                  <div className="h-32 rounded-[32px] bg-[#e6deff]" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="h-24 rounded-[32px] bg-[#ffe5ec]" />
-                    <div className="h-24 rounded-[32px] bg-[#eceeee]" />
-                  </div>
-                  <div className="h-20 rounded-[32px] bg-[#f3f4f4]" />
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute left-[147.5px] top-[330px] z-20 h-[118px] w-[240px] animate-float-fast rounded-[32px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] pb-px pt-[17px] shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]">
-              <div className="flex items-center justify-between">
-                <span className="rounded-full bg-[#f5f5f5] px-3 py-[3px] text-[12px] leading-4 text-[#64748b]">
-                  {copy.trending}
-                </span>
-                <span className="text-[12px] leading-4 text-[#64748b]">{copy.today}</span>
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <div className="text-[30px] font-semibold leading-7 text-[#0f172a]">{todayCopyCountLabel}</div>
-                  <div className="text-[12px] leading-4 text-[#64748b]">{copy.copies}</div>
-                </div>
-                <div className="h-10 w-16 rounded-3xl bg-gradient-to-br from-[#6C47FF] via-[#9D7BFF] to-[#FF6B97]" />
-              </div>
-            </div>
-
-            <div
-              className="absolute left-[291.7px] top-[405.5px] z-20 h-[106.5px] w-[224px] animate-float-slow rounded-[32px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[17px] pb-px pt-[17px] shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]"
-              style={{ animationDelay: "-2.5s" }}
-            >
-              <div className="flex flex-wrap gap-2">
-                {copy.heroTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-[#f5f5f5] px-3 py-[3px] text-[11px] leading-[16.5px] text-[#475569]"
-                  >
+          <div className="pointer-events-none absolute inset-0 z-20 hidden lg:block">
+            <div className="absolute left-[92px] top-[48px] rotate-[-9deg] animate-float-fast rounded-[24px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-4 py-3 shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]">
+              <div className="flex gap-2">
+                {[copy.heroTagA, copy.heroTagB, copy.heroTagC].map((tag) => (
+                  <span key={`mini-${tag}`} className="rounded-full bg-[#f5f5f5] px-2.5 py-[2px] text-[10px] text-[#475569]">
                     {tag}
                   </span>
                 ))}
               </div>
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-3 flex items-center gap-2.5">
                 <div className="flex items-center">
                   {heroContributorTones.map((tone, index) => (
                     <span
-                      key={tone}
-                      className={`-ml-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br ${tone} text-[11px] font-semibold text-white shadow-soft`}
+                      key={`mini-${tone}`}
+                      className={`-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-gradient-to-br ${tone} text-[10px] font-semibold text-white`}
                       style={{ zIndex: heroContributorTones.length - index }}
                     >
                       {index + 1}
@@ -255,127 +128,59 @@ export default async function Home() {
                 <span className="text-[12px] leading-4 text-[#64748b]">{contributorCountLabel}</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section className={`${container} space-y-10`}>
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{copy.featured}</p>
-            <h2 className="mt-3 font-display text-3xl text-slate-900 md:text-4xl">{copy.featuredTitle}</h2>
-          </div>
-          <Link href="/explore" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-            {copy.viewAll}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {featuredDesigns.map((design) => (
-            <DesignCard key={design.id} design={design} locale={locale} />
-          ))}
-        </div>
-      </section>
-
-      <section className={`${container} space-y-10`}>
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{copy.browse}</p>
-          <h2 className="mt-3 font-display text-3xl text-slate-900 md:text-4xl">{copy.browseTitle}</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {topics.map((topic) => (
-            <TopicCard key={topic.slug} topic={topic} locale={locale} />
-          ))}
-        </div>
-      </section>
-
-      <section className={`${container} space-y-10`}>
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{copy.detailPreview}</p>
-            <h2 className="mt-3 font-display text-3xl text-slate-900 md:text-4xl">{copy.detailTitle}</h2>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-slate-600">
-            <button className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-white px-4 text-xs font-semibold text-slate-600">
-              <Heart className="h-4 w-4" />
-              {copy.like}
-            </button>
-            <button className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-white px-4 text-xs font-semibold text-slate-600">
-              <Copy className="h-4 w-4" />
-              {copy.copy}
-            </button>
-            <button className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-white px-4 text-xs font-semibold text-slate-600">
-              <Layers className="h-4 w-4" />
-              {copy.remix}
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-3xl border border-border bg-[#0F0F17] p-6 shadow-soft">
-            <div className="mb-4 flex items-center justify-between text-xs text-slate-400">
-              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-300">
-                DESIGN.md
-              </span>
-              <span>{copy.updated2d}</span>
+            <div
+              className="absolute left-[286px] top-[252px] -rotate-[12deg] animate-float-slow rounded-full bg-[#2f3334] px-4 py-2 text-[12px] font-bold tracking-[0.05em] text-white"
+              style={{ animationDelay: "-1.5s" }}
+            >
+              {copy.badgeResource}
             </div>
-            <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-slate-200">
-              {preview?.content || (locale === "zh" ? fallbackDocZh : fallbackDocEn)}
-            </pre>
-          </div>
 
-          <div className="space-y-4">
-            {previewItems.map((item, index) => (
-              <div key={item.label} className="rounded-3xl border border-border bg-white p-4 shadow-soft">
-                <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-                  <span className="rounded-full border border-border bg-white px-3 py-1 text-[11px] font-semibold text-slate-600">
-                    {item.label}
-                  </span>
-                  <span>{copy.view}</span>
-                </div>
-                {item.image ? (
-                  <img src={item.image} alt={item.label} className="h-44 w-full rounded-2xl object-cover" />
-                ) : (
-                  <div
-                    className={`h-44 rounded-2xl bg-gradient-to-br ${
-                      index === 0
-                        ? "from-[#0A0A0A] via-[#1F1F2D] to-[#2A2A3C]"
-                        : index === 1
-                          ? "from-[#FFE1EE] via-[#FFF4F8] to-white"
-                          : "from-[#DFF7F1] via-[#F4FFFA] to-white"
-                    }`}
-                  />
-                )}
+            <div
+              className="absolute left-[908px] top-[116px] rotate-[6deg] animate-float-fast rounded-full bg-[#9e49f5] px-4 py-2 text-[12px] font-bold tracking-[0.05em] text-white"
+              style={{ animationDelay: "-2.2s" }}
+            >
+              {copy.badgeSkill}
+            </div>
+
+            <div
+              className="absolute left-[932px] top-[238px] w-[204px] -rotate-[7deg] animate-float-slow rounded-[24px] bg-[#4f46e5] p-5 text-white shadow-[0px_30px_60px_-15px_rgba(79,70,229,0.3)]"
+              style={{ animationDelay: "-1.6s" }}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/70">{copy.floatingCardLabel}</p>
+              <p className="mt-2 text-[18px] font-semibold leading-[22px]">{copy.floatingCardTitle}</p>
+              <div className="mt-4 flex gap-2 text-[10px] font-semibold">
+                <span className="rounded-full bg-white/20 px-3 py-1">{copy.floatingCardTagA}</span>
+                <span className="rounded-full bg-white/20 px-3 py-1">{copy.floatingCardTagB}</span>
               </div>
-            ))}
+              <p className="mt-5 text-[11px] text-white/90">
+                {copy.floatingCardUpdated}, {copy.floatingCardTime}
+              </p>
+            </div>
+
+            <div
+              className="absolute left-[56px] top-[406px] h-[110px] w-[228px] rotate-[4deg] animate-float-fast rounded-[30px] border border-[#e4e4e7] bg-[rgba(255,255,255,0.9)] px-[16px] pt-[16px] shadow-[0px_24px_64px_0px_rgba(0,0,0,0.1)]"
+              style={{ animationDelay: "-1.1s" }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="rounded-full bg-[#f5f5f5] px-3 py-[3px] text-[12px] leading-4 text-[#64748b]">{copy.trending}</span>
+                <span className="text-[12px] leading-4 text-[#64748b]">{copy.today}</span>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <div className="min-w-0">
+                  <div className="text-[33px] font-semibold leading-7 text-[#0f172a]">{todayCopyCountLabel}</div>
+                  <div className="mt-0.5 text-[12px] leading-4 text-[#64748b]">{copy.copies}</div>
+                </div>
+                <div className="h-10 w-16 rounded-[24px] bg-[linear-gradient(148deg,#6C47FF_0%,#9D7BFF_50%,#FF6B97_100%)]" />
+              </div>
+            </div>
+
+            <Sparkles className="absolute left-[1044px] top-[190px] h-5 w-5 animate-float-slow rotate-12 text-[#b8c0ff]" />
           </div>
         </div>
       </section>
 
-      <section className={`${container}`}>
-        <div className="grid gap-8 rounded-[36px] border border-border bg-white p-10 shadow-soft lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{copy.community}</p>
-            <h2 className="font-display text-3xl text-slate-900 md:text-4xl">{copy.publishToday}</h2>
-            <p className="text-sm text-slate-600">{copy.publishDesc}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link
-              href="/submit"
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-white shadow-float transition duration-150 hover:brightness-105 active:scale-[0.97]"
-            >
-              {copy.submitDesign}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/explore"
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white px-6 text-sm font-semibold text-slate-700"
-            >
-              {copy.learnMore}
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HomeResourceStream locale={locale} />
     </div>
   )
 }

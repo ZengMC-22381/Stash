@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getUserIdFromRequest } from "@/lib/auth"
+import { enforceRateLimit } from "@/lib/rate-limit"
+import { RATE_LIMIT_RULES } from "@/lib/rate-limit-rules"
 
 export const runtime = "nodejs"
 
@@ -11,20 +13,20 @@ type RouteProps = {
 export async function GET(request: NextRequest, context: RouteProps) {
   try {
     const { slug } = await context.params
-    const design = await prisma.design.findUnique({ where: { slug } })
-    if (!design) {
-      return NextResponse.json({ error: "Design not found." }, { status: 404 })
+    const resource = await prisma.design.findUnique({ where: { slug } })
+    if (!resource) {
+      return NextResponse.json({ error: "Resource not found." }, { status: 404 })
     }
 
     const [total, userId] = await Promise.all([
-      prisma.like.count({ where: { designId: design.id } }),
+      prisma.like.count({ where: { designId: resource.id } }),
       getUserIdFromRequest(request),
     ])
 
     let liked = false
     if (userId) {
       const existing = await prisma.like.findUnique({
-        where: { designId_userId: { designId: design.id, userId } },
+        where: { designId_userId: { designId: resource.id, userId } },
         select: { id: true },
       })
       liked = Boolean(existing)
@@ -45,18 +47,26 @@ export async function POST(request: NextRequest, context: RouteProps) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
     }
 
-    const design = await prisma.design.findUnique({ where: { slug } })
-    if (!design) {
-      return NextResponse.json({ error: "Design not found." }, { status: 404 })
+    const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.interactionWrite, userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many like actions. Please try again later." }, {
+        status: 429,
+        headers: rateLimit.headers,
+      })
+    }
+
+    const resource = await prisma.design.findUnique({ where: { slug } })
+    if (!resource) {
+      return NextResponse.json({ error: "Resource not found." }, { status: 404 })
     }
 
     await prisma.like.upsert({
-      where: { designId_userId: { designId: design.id, userId } },
+      where: { designId_userId: { designId: resource.id, userId } },
       update: {},
-      create: { designId: design.id, userId },
+      create: { designId: resource.id, userId },
     })
 
-    const total = await prisma.like.count({ where: { designId: design.id } })
+    const total = await prisma.like.count({ where: { designId: resource.id } })
     return NextResponse.json({ liked: true, total })
   } catch (error) {
     console.error("[LIKES_POST]", error)
@@ -72,14 +82,22 @@ export async function DELETE(request: NextRequest, context: RouteProps) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
     }
 
-    const design = await prisma.design.findUnique({ where: { slug } })
-    if (!design) {
-      return NextResponse.json({ error: "Design not found." }, { status: 404 })
+    const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.interactionWrite, userId)
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many like actions. Please try again later." }, {
+        status: 429,
+        headers: rateLimit.headers,
+      })
     }
 
-    await prisma.like.deleteMany({ where: { designId: design.id, userId } })
+    const resource = await prisma.design.findUnique({ where: { slug } })
+    if (!resource) {
+      return NextResponse.json({ error: "Resource not found." }, { status: 404 })
+    }
 
-    const total = await prisma.like.count({ where: { designId: design.id } })
+    await prisma.like.deleteMany({ where: { designId: resource.id, userId } })
+
+    const total = await prisma.like.count({ where: { designId: resource.id } })
     return NextResponse.json({ liked: false, total })
   } catch (error) {
     console.error("[LIKES_DELETE]", error)

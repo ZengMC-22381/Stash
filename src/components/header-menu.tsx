@@ -69,8 +69,10 @@ export default function HeaderMenu({ locale, mobile = false, className, variant 
             key={item.href}
             href={item.href}
             className={merge(
-              "inline-flex h-9 w-[52px] items-center justify-center rounded-full text-[14px] font-medium leading-5 transition",
-              isActive(item.href) ? "text-[#334155]" : "text-[#475569] hover:text-[#334155]"
+              "inline-flex h-9 min-w-[52px] items-center justify-center rounded-full px-3 text-[14px] font-medium leading-5 transition",
+              isActive(item.href)
+                ? "text-[#475569]"
+                : "text-[rgba(71,85,105,0.5)] hover:text-[#475569]"
             )}
           >
             {item.label}
