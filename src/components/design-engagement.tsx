@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Star } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { formatCompact } from "@/lib/format"
 import type { Locale } from "@/lib/locale"
 
@@ -161,7 +163,7 @@ export default function DesignEngagement({ slug, locale }: Props) {
               const value = index + 1
               const filled = (hoverRating ?? myRating ?? rating.average) >= value
               return (
-                <button
+                <Button variant="unstyled"
                   key={value}
                   type="button"
                   onClick={() => submitRating(value)}
@@ -175,7 +177,7 @@ export default function DesignEngagement({ slug, locale }: Props) {
                     className={`h-4 w-4 ${filled ? "text-primary" : "text-slate-300"}`}
                     fill={filled ? "currentColor" : "none"}
                   />
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -184,20 +186,20 @@ export default function DesignEngagement({ slug, locale }: Props) {
       </div>
 
       <div className="mt-6 space-y-4">
-        <textarea
+        <Textarea
           value={newComment}
           onChange={(event) => setNewComment(event.target.value)}
           placeholder={copy.commentPlaceholder}
           className="w-full rounded-2xl border border-border px-4 py-3 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
           disabled={!user}
         />
-        <button
+        <Button variant="unstyled"
           onClick={submitComment}
           disabled={!user}
           className="inline-flex h-10 items-center rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700 disabled:opacity-50"
         >
           {copy.postComment}
-        </button>
+        </Button>
         {!user ? (
           <p className="text-sm text-slate-500">{copy.signInTip}</p>
         ) : null}

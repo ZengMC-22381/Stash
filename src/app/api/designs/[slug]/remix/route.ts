@@ -33,6 +33,7 @@ export async function POST(request: NextRequest, context: RouteProps) {
         author: { select: { name: true } },
         tags: { include: { tag: true } },
         images: true,
+        contentBlocks: { orderBy: { order: "asc" } },
       },
     })
 
@@ -49,7 +50,6 @@ export async function POST(request: NextRequest, context: RouteProps) {
 
     const titleInput = typeof body.title === "string" ? body.title.trim() : ""
     const descriptionInput = typeof body.description === "string" ? body.description.trim() : ""
-    const contentInput = typeof body.content === "string" ? body.content.trim() : ""
 
     if (titleInput.length > 120) {
       return NextResponse.json({ error: "Remix title is too long." }, { status: 400 })
@@ -59,14 +59,9 @@ export async function POST(request: NextRequest, context: RouteProps) {
       return NextResponse.json({ error: "Remix description is too long." }, { status: 400 })
     }
 
-    if (contentInput.length > 50_000) {
-      return NextResponse.json({ error: "Remix content is too long." }, { status: 400 })
-    }
-
     const title = titleInput || `${baseDesign.title} Remix`
     const description =
       descriptionInput || `Remix of \"${baseDesign.title}\" by ${baseDesign.author.name}.`
-    const content = contentInput || baseDesign.content
 
     const remixSlug = await ensureUniqueSlug(title, async (candidate) => {
       const existing = await prisma.design.findUnique({ where: { slug: candidate } })
@@ -78,7 +73,7 @@ export async function POST(request: NextRequest, context: RouteProps) {
         title,
         slug: remixSlug,
         description,
-        content,
+        content: "",
         authorId: userId,
         parentDesignId: baseDesign.id,
         categoryId: baseDesign.categoryId,
@@ -95,6 +90,20 @@ export async function POST(request: NextRequest, context: RouteProps) {
             url: image.url,
             caption: image.caption,
             order: image.order,
+          })),
+        },
+        contentBlocks: {
+          create: baseDesign.contentBlocks.map((block) => ({
+            type: block.type,
+            order: block.order,
+            markdown: block.markdown,
+            linkUrl: block.linkUrl,
+            linkTitle: block.linkTitle,
+            linkPreviewImage: block.linkPreviewImage,
+            fileUrl: block.fileUrl,
+            fileName: block.fileName,
+            fileSizeBytes: block.fileSizeBytes,
+            fileMimeType: block.fileMimeType,
           })),
         },
       },

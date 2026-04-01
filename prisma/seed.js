@@ -51,7 +51,8 @@ async function main() {
       description: "A calm, high-contrast onboarding flow that balances clarity and polish.",
       category: "saas",
       tags: ["SaaS", "Onboarding", "Minimal"],
-      content: "# RESOURCE.md\n\n## Purpose\nCreate a premium onboarding flow for a modern SaaS product. The user should feel confident, guided, and energized.\n\n## Visual Language\n- Large editorial typography\n- Neutral background with soft gradients\n- Rounded cards, glassy overlays\n- Accent colors used sparingly for focus\n\n## Layout Structure\n1. Hero headline with concise value proposition\n2. Step-by-step onboarding cards (3 steps)\n3. Feature grid with short labels\n4. Testimonial band with avatar stack\n",
+      markdown:
+        "# RESOURCE.md\n\n## Purpose\nCreate a premium onboarding flow for a modern SaaS product. The user should feel confident, guided, and energized.\n\n## Visual Language\n- Large editorial typography\n- Neutral background with soft gradients\n- Rounded cards, glassy overlays\n- Accent colors used sparingly for focus\n\n## Layout Structure\n1. Hero headline with concise value proposition\n2. Step-by-step onboarding cards (3 steps)\n3. Feature grid with short labels\n4. Testimonial band with avatar stack\n",
       images: [
         "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a",
         "https://images.unsplash.com/photo-1487014679447-9f8336841d58",
@@ -62,7 +63,8 @@ async function main() {
       description: "A data-dense dashboard with airy spacing and intuitive highlights.",
       category: "dashboard",
       tags: ["Dashboard", "Charts", "Enterprise"],
-      content: "# RESOURCE.md\n\n## Purpose\nCreate a data-rich analytics dashboard that feels light and approachable.\n\n## Visual Language\n- Crisp grid layout\n- Cool blue accents\n- Clear hierarchy between cards\n\n## Layout Structure\n1. Top KPI row\n2. Two-column chart grid\n3. Insights sidebar\n",
+      markdown:
+        "# RESOURCE.md\n\n## Purpose\nCreate a data-rich analytics dashboard that feels light and approachable.\n\n## Visual Language\n- Crisp grid layout\n- Cool blue accents\n- Clear hierarchy between cards\n\n## Layout Structure\n1. Top KPI row\n2. Two-column chart grid\n3. Insights sidebar\n",
       images: [
         "https://images.unsplash.com/photo-1551288049-bebda4e38f71",
         "https://images.unsplash.com/photo-1519389950473-47ba0277781c",
@@ -73,7 +75,8 @@ async function main() {
       description: "Smooth commerce flow with friendly microcopy and soft gradients.",
       category: "mobile-app",
       tags: ["Mobile App", "E-commerce", "Fintech"],
-      content: "# RESOURCE.md\n\n## Purpose\nDesign a mobile checkout flow that feels quick and reassuring.\n\n## Visual Language\n- Warm gradients\n- Rounded cards\n- Microcopy for reassurance\n",
+      markdown:
+        "# RESOURCE.md\n\n## Purpose\nDesign a mobile checkout flow that feels quick and reassuring.\n\n## Visual Language\n- Warm gradients\n- Rounded cards\n- Microcopy for reassurance\n",
       images: [
         "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
       ],
@@ -90,9 +93,18 @@ async function main() {
         title: design.title,
         slug,
         description: design.description,
-        content: design.content,
+        content: "",
         authorId: demoUser.id,
         categoryId: categoryRecords[design.category]?.id,
+        contentBlocks: {
+          create: [
+            {
+              type: "markdown",
+              order: 0,
+              markdown: design.markdown,
+            },
+          ],
+        },
         tags: {
           create: design.tags.map((tag) => ({
             tag: {

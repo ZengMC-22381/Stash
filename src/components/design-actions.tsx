@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Bookmark, Copy, Heart, Layers } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import type { Locale } from "@/lib/locale"
 
 type Props = {
@@ -206,7 +207,7 @@ export default function DesignActions({ slug, content, locale }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={handleLike}
           disabled={loading}
@@ -217,8 +218,8 @@ export default function DesignActions({ slug, content, locale }: Props) {
           <Heart className="h-4 w-4" />
           {liked ? copy.liked : copy.like}
           {typeof likeTotal === "number" ? <span className="ml-1 text-[11px] opacity-80">{likeTotal}</span> : null}
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           onClick={handleSave}
           disabled={loading}
@@ -229,16 +230,16 @@ export default function DesignActions({ slug, content, locale }: Props) {
           <Bookmark className="h-4 w-4" />
           {saved ? copy.saved : copy.save}
           {typeof saveTotal === "number" ? <span className="ml-1 text-[11px] opacity-80">{saveTotal}</span> : null}
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           onClick={handleCopy}
           className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-white px-4 text-xs font-semibold text-slate-600 hover:border-primary"
         >
           <Copy className="h-4 w-4" />
           {copyState === "copied" ? copy.copied : copy.copy}
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           onClick={handleRemix}
           disabled={loading}
@@ -246,7 +247,7 @@ export default function DesignActions({ slug, content, locale }: Props) {
         >
           <Layers className="h-4 w-4" />
           {copy.remix}
-        </button>
+        </Button>
       </div>
       {message ? <p className="text-xs text-slate-500">{message}</p> : null}
     </div>

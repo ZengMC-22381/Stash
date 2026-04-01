@@ -27,7 +27,10 @@ export default async function SiteHeader({ locale }: Props) {
         }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[rgba(228,228,231,0.8)] bg-[rgba(255,255,255,0.8)] backdrop-blur-[8px]">
+    <header
+      data-site-header
+      className="fixed inset-x-0 top-0 z-50 border-b border-[rgba(228,228,231,0.8)] bg-[rgba(255,255,255,0.8)] backdrop-blur-[8px]"
+    >
       <div className="mx-auto h-[65px] w-full max-w-[1279px] px-[63.5px]">
         <div className="hidden h-16 items-center justify-between px-6 lg:flex">
           <Link href="/" className="font-display text-[20px] font-bold leading-7 text-[#0f172a]" aria-label={copy.brand}>
@@ -38,7 +41,7 @@ export default async function SiteHeader({ locale }: Props) {
             <HeaderMenu locale={locale} variant="header" className="pr-1" />
             <LanguageSwitcher locale={locale} variant="header" />
             <Link
-              href={user ? `/author/${user.id}` : "/submit"}
+              href={user ? `/author/${user.id}` : "/login"}
               aria-label={copy.profileLabel}
               className="ml-1 border-l border-[rgba(175,178,179,0.2)] pl-2"
               title={user?.name || copy.guestName}

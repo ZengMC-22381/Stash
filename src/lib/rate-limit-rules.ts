@@ -10,4 +10,5 @@ export const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
   ratingCreate: { id: "resource-rating-create", windowMs: 60 * 60 * 1000, max: 120 },
   copyTrack: { id: "resource-copy-track", windowMs: 60 * 60 * 1000, max: 240 },
   uploadImages: { id: "upload-images", windowMs: 60 * 60 * 1000, max: 40 },
+  uploadFiles: { id: "upload-files", windowMs: 60 * 60 * 1000, max: 40 },
 }

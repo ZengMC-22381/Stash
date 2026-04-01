@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useTransition } from "react"
+import { Button } from "@/components/ui/button"
 import type { Locale } from "@/lib/locale"
 
 type Props = {
@@ -39,7 +40,7 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
   if (variant === "segmented") {
     return (
       <div className="inline-flex h-full items-center rounded-full border border-[rgba(175,178,179,0.1)] bg-[rgba(243,244,244,0.5)] p-[5px]">
-        <button
+        <Button variant="unstyled"
           type="button"
           disabled={isPending}
           onClick={() => switchLocale("zh")}
@@ -51,8 +52,8 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
           )}
         >
           CN
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           disabled={isPending}
           onClick={() => switchLocale("en")}
@@ -64,7 +65,7 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
           )}
         >
           EN
-        </button>
+        </Button>
       </div>
     )
   }
@@ -72,7 +73,7 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
   if (variant === "header") {
     return (
       <div className="inline-flex h-9 items-center rounded-full bg-[#f3f4f4] p-1">
-        <button
+        <Button variant="unstyled"
           type="button"
           disabled={isPending}
           onClick={() => switchLocale("zh")}
@@ -85,8 +86,8 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
           )}
         >
           🇨🇳
-        </button>
-        <button
+        </Button>
+        <Button variant="unstyled"
           type="button"
           disabled={isPending}
           onClick={() => switchLocale("en")}
@@ -99,29 +100,29 @@ export default function LanguageSwitcher({ locale, variant = "default" }: Props)
           )}
         >
           🇬🇧
-        </button>
+        </Button>
       </div>
     )
   }
 
   return (
     <div className="inline-flex items-center rounded-full border border-border bg-white p-1 text-xs font-semibold text-slate-600 shadow-soft">
-      <button
+      <Button variant="unstyled"
         type="button"
         disabled={isPending}
         onClick={() => switchLocale("zh")}
         className={`rounded-full px-3 py-1 transition ${pendingLocale === "zh" ? "bg-primary text-white" : "text-slate-600"}`}
       >
         中文
-      </button>
-      <button
+      </Button>
+      <Button variant="unstyled"
         type="button"
         disabled={isPending}
         onClick={() => switchLocale("en")}
         className={`rounded-full px-3 py-1 transition ${pendingLocale === "en" ? "bg-primary text-white" : "text-slate-600"}`}
       >
         EN
-      </button>
+      </Button>
     </div>
   )
 }

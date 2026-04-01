@@ -56,6 +56,7 @@ model Design {
   categoryId     String?
   category       Category?     @relation(fields: [categoryId], references: [id])
   images         DesignImage[]
+  contentBlocks  DesignContentBlock[]
   tags           DesignTag[]
   comments       Comment[]
   ratings        Rating[]
@@ -68,6 +69,26 @@ model Design {
   @@index([resourceType])
   @@index([toolAgent])
   @@index([scenario])
+}
+
+model DesignContentBlock {
+  id              String   @id @default(cuid())
+  designId         String
+  design           Design   @relation(fields: [designId], references: [id], onDelete: Cascade)
+  type             String
+  order            Int      @default(0)
+  markdown         String?
+  linkUrl          String?
+  linkTitle        String?
+  linkPreviewImage String?
+  fileUrl          String?
+  fileName         String?
+  fileSizeBytes    Int?
+  fileMimeType     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([designId, order])
 }
 
 model DesignImage {
