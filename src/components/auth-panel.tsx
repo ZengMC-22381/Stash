@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type { Locale } from "@/lib/locale"
 
 type User = {
@@ -136,12 +138,12 @@ export default function AuthPanel({ locale }: Props) {
           </p>
         </div>
         {user ? (
-          <button
+          <Button variant="unstyled"
             onClick={handleLogout}
             className="inline-flex h-11 items-center rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700"
           >
             {copy.logout}
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -149,13 +151,13 @@ export default function AuthPanel({ locale }: Props) {
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
           {mode === "register" ? (
             <>
-              <input
+              <Input
                 value={form.name}
                 onChange={handleChange("name")}
                 placeholder={copy.fullName}
                 className="h-11 rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
               />
-              <input
+              <Input
                 value={form.handle}
                 onChange={handleChange("handle")}
                 placeholder={copy.handle}
@@ -163,13 +165,13 @@ export default function AuthPanel({ locale }: Props) {
               />
             </>
           ) : null}
-          <input
+          <Input
             value={form.email}
             onChange={handleChange("email")}
             placeholder={copy.email}
             className="h-11 rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
           />
-          <input
+          <Input
             type="password"
             value={form.password}
             onChange={handleChange("password")}
@@ -177,20 +179,20 @@ export default function AuthPanel({ locale }: Props) {
             className="h-11 rounded-2xl border border-border px-4 text-sm text-slate-700 outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
           />
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-            <button
+            <Button variant="unstyled"
               type="submit"
               disabled={loading}
               className="inline-flex h-11 items-center rounded-full bg-primary px-6 text-sm font-semibold text-white shadow-float"
             >
               {loading ? copy.pleaseWait : mode === "login" ? copy.login : copy.createAccount}
-            </button>
-            <button
+            </Button>
+            <Button variant="unstyled"
               type="button"
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="text-sm font-semibold text-slate-600"
             >
               {mode === "login" ? copy.needAccount : copy.hasAccount}
-            </button>
+            </Button>
             {message ? <span className="text-sm text-slate-500">{message}</span> : null}
           </div>
         </form>

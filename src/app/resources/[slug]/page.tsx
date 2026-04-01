@@ -25,13 +25,13 @@ export default async function ResourceDetailPage({ params }: PageProps) {
           back: "返回",
           docTag: "DESIGN.md",
           updated: "更新于",
-          markdown: "Markdown 预览",
+          markdown: "内容块预览",
         }
       : {
           back: "Back",
           docTag: "DESIGN.md",
           updated: "Updated",
-          markdown: "Markdown Preview",
+          markdown: "Content Blocks",
         }
 
   const authorInitial = resource.author.name?.trim()?.charAt(0)?.toUpperCase() || "G"
@@ -87,7 +87,7 @@ export default async function ResourceDetailPage({ params }: PageProps) {
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10 lg:px-12">
-                <ResourceMdViewer content={resource.content} />
+                <ResourceMdViewer blocks={resource.contentBlocks} locale={locale} />
               </div>
             </div>
           </section>

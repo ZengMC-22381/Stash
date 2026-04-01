@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { JetBrains_Mono, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google"
+import localFont from "next/font/local"
 import "@/app/globals.css"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
@@ -9,6 +10,11 @@ import { getServerLocale } from "@/lib/server-locale"
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" })
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" })
+const amberla = localFont({
+  src: "./fonts/Amberla-Free.ttf",
+  variable: "--font-stay-in-touch",
+  display: "swap",
+})
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale()
@@ -33,14 +39,17 @@ export default async function RootLayout({
   const locale = await getServerLocale()
 
   return (
-    <html lang={locale} className={`${plusJakarta.variable} ${playfair.variable} ${jetbrains.variable}`}>
+    <html
+      lang={locale}
+      className={`${plusJakarta.variable} ${playfair.variable} ${jetbrains.variable} ${amberla.variable}`}
+    >
       <head>
         <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async />
       </head>
       <body className="font-sans">
         <div className="min-h-screen bg-white text-slate-900">
           <SiteHeader locale={locale} />
-          <main className="pt-[65px]">{children}</main>
+          <main data-app-main className="pt-[65px]">{children}</main>
           <SiteFooter locale={locale} />
           <QuickSearchDock locale={locale} />
         </div>

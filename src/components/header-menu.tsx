@@ -21,16 +21,17 @@ export default function HeaderMenu({ locale, mobile = false, className, variant 
     locale === "zh"
       ? [
           { href: "/", label: "首页" },
-          { href: "/explore", label: "发现" },
+          { href: "/#directory-filter", label: "发现" },
           { href: "/forum", label: "论坛" },
         ]
       : [
           { href: "/", label: "Home" },
-          { href: "/explore", label: "Discover" },
+          { href: "/#directory-filter", label: "Discover" },
           { href: "/forum", label: "Forum" },
         ]
 
   const isActive = (href: string) => {
+    if (href.startsWith("/#")) return false
     if (href === "/") return pathname === "/"
     return pathname === href || pathname.startsWith(`${href}/`)
   }

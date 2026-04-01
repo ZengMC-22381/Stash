@@ -18,13 +18,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const name = String(body.name || "").trim()
+    const rawName = String(body.name || "").trim()
     const email = String(body.email || "").trim().toLowerCase()
     const password = String(body.password || "")
     const handleInput = String(body.handle || "").trim()
 
-    if (!name || !email || !password) {
-      return NextResponse.json({ error: "Missing required fields." }, { status: 400 })
+    if (!email || !password) {
+      return NextResponse.json({ error: "Missing email or password." }, { status: 400 })
     }
 
     if (!email.includes("@")) {
@@ -35,12 +35,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must be between 8 and 128 characters." }, { status: 400 })
     }
 
+    const fallbackName = email.split("@")[0]?.trim().replace(/[._-]+/g, " ") || ""
+    const normalizedFallbackName = fallbackName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+    const name = rawName || normalizedFallbackName || "Creator"
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
       return NextResponse.json({ error: "Email already in use." }, { status: 409 })
     }
 
-    const baseHandle = handleInput || name || email.split("@")[0]
+    const baseHandle = handleInput || email.split("@")[0] || "user"
     const handle = await ensureUniqueSlug(baseHandle, async (slug) => {
       const user = await prisma.user.findUnique({ where: { handle: slug } })
       return Boolean(user)

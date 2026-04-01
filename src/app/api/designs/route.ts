@@ -16,15 +16,25 @@ import { ensureUniqueSlug, slugify } from "@/lib/slug"
 
 export const runtime = "nodejs"
 
+function parseMultiParam(searchParams: URLSearchParams, key: string) {
+  const raw = searchParams
+    .getAll(key)
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return Array.from(new Set(raw))
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get("search")?.trim()
     const category = searchParams.get("category")?.trim()
-    const resourceType = searchParams.get("resourceType")?.trim()
-    const tool = searchParams.get("tool")?.trim()
-    const tag = searchParams.get("tag")?.trim()
-    const scenario = searchParams.get("scenario")?.trim()
+    const resourceTypeValues = parseMultiParam(searchParams, "resourceType")
+    const toolValues = parseMultiParam(searchParams, "tool")
+    const tagValues = parseMultiParam(searchParams, "tag")
+    const scenarioValues = parseMultiParam(searchParams, "scenario")
     const sort = searchParams.get("sort")?.trim() || "latest"
     const takeParam = Number(searchParams.get("take"))
     const skipParam = Number(searchParams.get("skip"))
@@ -37,38 +47,65 @@ export async function GET(request: NextRequest) {
       where.category = { slug: category }
     }
 
-    if (resourceType) {
-      const typeOption = resolveDictionaryOption(resourceType, RESOURCE_TYPE_OPTIONS)
-      if (typeOption) {
-        where.resourceType = typeOption.value
+    if (resourceTypeValues.length > 0) {
+      const normalizedTypes = Array.from(
+        new Set(
+          resourceTypeValues
+            .map((value) => resolveDictionaryOption(value, RESOURCE_TYPE_OPTIONS)?.value || value.trim().toLowerCase())
+            .filter(Boolean)
+        )
+      )
+      if (normalizedTypes.length > 0) {
+        where.resourceType = { in: normalizedTypes }
       }
     }
 
-    if (tool) {
-      const toolOption = resolveDictionaryOption(tool, RESOURCE_TOOL_OPTIONS)
-      if (toolOption) {
-        where.toolAgent = toolOption.label
+    if (toolValues.length > 0) {
+      const normalizedTools = Array.from(
+        new Set(
+          toolValues
+            .map((value) => resolveDictionaryOption(value, RESOURCE_TOOL_OPTIONS)?.label || value.trim())
+            .filter(Boolean)
+        )
+      )
+      if (normalizedTools.length > 0) {
+        where.toolAgent = { in: normalizedTools }
       }
     }
 
-    if (tag) {
-      const tagOption = resolveDictionaryOption(tag, RESOURCE_TAG_OPTIONS)
-      const tagSlug = tagOption?.value || slugify(tag)
-      if (tagSlug) {
+    if (tagValues.length > 0) {
+      const tagSlugs = Array.from(
+        new Set(
+          tagValues
+            .map((value) => resolveDictionaryOption(value, RESOURCE_TAG_OPTIONS)?.value || slugify(value))
+            .filter(Boolean)
+        )
+      )
+      if (tagSlugs.length > 0) {
         where.tags = {
           some: {
             tag: {
-              slug: tagSlug,
+              slug: {
+                in: tagSlugs,
+              },
             },
           },
         }
       }
     }
 
-    if (scenario) {
-      const scenarioOption = resolveDictionaryOption(scenario, RESOURCE_SCENARIO_OPTIONS)
-      if (scenarioOption) {
-        where.scenario = scenarioOption.label
+    if (scenarioValues.length > 0) {
+      const normalizedScenarios = Array.from(
+        new Set(
+          scenarioValues
+            .map((value) => resolveDictionaryOption(value, RESOURCE_SCENARIO_OPTIONS)?.label || value.trim())
+            .filter(Boolean)
+        )
+      )
+      if (normalizedScenarios.length > 0) {
+        where.scenario = {
+          in: normalizedScenarios,
+        }
       }
     }
 
@@ -76,7 +113,18 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { content: { contains: search, mode: "insensitive" } },
+        {
+          contentBlocks: {
+            some: {
+              OR: [
+                { markdown: { contains: search, mode: "insensitive" } },
+                { linkTitle: { contains: search, mode: "insensitive" } },
+                { linkUrl: { contains: search, mode: "insensitive" } },
+                { fileName: { contains: search, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
       ]
     }
 
@@ -168,15 +216,15 @@ export async function POST(request: NextRequest) {
     const payload = validateResourcePayload({
       title: String(body.title || ""),
       description: String(body.description || ""),
-      content: String(body.content || ""),
       tags: body.tags,
       images: body.images,
+      contentBlocks: body.contentBlocks ?? body.blocks,
     })
     if (!payload.ok) {
       return NextResponse.json({ error: payload.error }, { status: 400 })
     }
 
-    const { title, description, content, tags, images } = payload.value
+    const { title, description, tags, images, contentBlocks } = payload.value
     const inputResourceType = body.resourceType ?? body.type
     const typeOption = inputResourceType
       ? resolveDictionaryOption(inputResourceType, RESOURCE_TYPE_OPTIONS)
@@ -222,7 +270,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        content,
+        content: "",
         slug,
         resourceType: typeOption?.value || DEFAULT_RESOURCE_TYPE,
         toolAgent: toolOption?.label || null,
@@ -246,12 +294,43 @@ export async function POST(request: NextRequest) {
             order: image.order,
           })),
         },
+        contentBlocks: {
+          create: contentBlocks.map((block) => {
+            if (block.type === "markdown") {
+              return {
+                type: block.type,
+                order: block.order,
+                markdown: block.markdown,
+              }
+            }
+
+            if (block.type === "link") {
+              return {
+                type: block.type,
+                order: block.order,
+                linkUrl: block.url,
+                linkTitle: block.title,
+                linkPreviewImage: block.previewImageUrl,
+              }
+            }
+
+            return {
+              type: block.type,
+              order: block.order,
+              fileUrl: block.fileUrl,
+              fileName: block.fileName,
+              fileSizeBytes: block.fileSizeBytes,
+              fileMimeType: block.mimeType,
+            }
+          }),
+        },
       },
       include: {
         author: { select: { id: true, name: true, handle: true } },
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
+        contentBlocks: { orderBy: { order: "asc" } },
         _count: { select: { comments: true, ratings: true, likes: true } },
       },
     })

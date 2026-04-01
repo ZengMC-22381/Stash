@@ -3,6 +3,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
 import type { Locale } from "@/lib/locale"
 
 type ResourceImage = {
@@ -97,7 +98,7 @@ export default function ResourcePreviewPager({ images, title, locale }: Props) {
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#71717a]">{copy.label}</span>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="unstyled"
               type="button"
               onClick={goPrev}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(209,209,209,1)] bg-white text-[#333333] transition hover:border-[#333333] disabled:cursor-not-allowed disabled:opacity-50"
@@ -105,8 +106,8 @@ export default function ResourcePreviewPager({ images, title, locale }: Props) {
               disabled={pages.length <= 1}
             >
               <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button variant="unstyled"
               type="button"
               onClick={goNext}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(209,209,209,1)] bg-white text-[#333333] transition hover:border-[#333333] disabled:cursor-not-allowed disabled:opacity-50"
@@ -114,7 +115,7 @@ export default function ResourcePreviewPager({ images, title, locale }: Props) {
               disabled={pages.length <= 1}
             >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
 

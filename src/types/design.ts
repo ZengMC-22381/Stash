@@ -19,8 +19,30 @@ export type DesignSummary = {
   tone: Tone
 }
 
+export type DesignContentBlock =
+  | {
+      type: "markdown"
+      order: number
+      markdown: string
+    }
+  | {
+      type: "link"
+      order: number
+      url: string
+      title: string
+      previewImageUrl?: string
+    }
+  | {
+      type: "file"
+      order: number
+      fileUrl: string
+      fileName: string
+      fileSizeBytes: number
+      mimeType?: string
+    }
+
 export type DesignDetail = DesignSummary & {
-  content: string
+  contentBlocks: DesignContentBlock[]
   images: { url: string; caption?: string }[]
   createdAt: Date
   updatedAt: Date

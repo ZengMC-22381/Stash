@@ -12,10 +12,6 @@ export const runtime = "nodejs"
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request)
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 })
-    }
-
     const rateLimit = enforceRateLimit(request, RATE_LIMIT_RULES.uploadImages, userId)
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: "Too many upload attempts. Please try again later." }, {

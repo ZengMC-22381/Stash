@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react"
 import { Grid2x2, Palette, Search, Sparkles, Type, X } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type { Locale } from "@/lib/locale"
 import type { SearchFacetItem, SearchTabId } from "@/lib/search-facets"
 
@@ -240,8 +242,8 @@ export default function QuickSearchDock({ locale }: Props) {
   }
 
   return (
-    <>
-      <button
+    <div data-quick-search-dock>
+      <Button variant="unstyled"
         type="button"
         onClick={() => setOpen(true)}
         aria-label={copy.openSearch}
@@ -257,7 +259,7 @@ export default function QuickSearchDock({ locale }: Props) {
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(255,255,255,0.35)] bg-[rgba(255,255,255,0.08)] text-[20px] font-medium leading-none text-white">
           {copy.shortcuts}
         </span>
-      </button>
+      </Button>
 
       {open ? (
         <div
@@ -270,19 +272,19 @@ export default function QuickSearchDock({ locale }: Props) {
             className="relative w-full max-w-[460px] rounded-[28px] border border-[rgba(255,255,255,0.12)] bg-[rgba(36,36,40,0.88)] p-3 shadow-[0px_40px_120px_rgba(0,0,0,0.5)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
+            <Button variant="unstyled"
               type="button"
               onClick={() => setOpen(false)}
               className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.9)]"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
 
             <div className="rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.08)] px-3 py-2">
               <div className="flex items-center gap-2">
                 <Search className="h-4 w-4 text-[rgba(255,255,255,0.65)]" />
-                <input
+                <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={(event) => {
@@ -302,7 +304,7 @@ export default function QuickSearchDock({ locale }: Props) {
               {quickChips.map((chip) => {
                 const active = selectedFacets[activeTab].includes(chip.slug)
                 return (
-                  <button
+                  <Button variant="unstyled"
                     key={chip.id}
                     type="button"
                     onClick={() => toggleFacet(activeTab, chip.slug)}
@@ -313,7 +315,7 @@ export default function QuickSearchDock({ locale }: Props) {
                     }`}
                   >
                     {chip.name}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -323,7 +325,7 @@ export default function QuickSearchDock({ locale }: Props) {
                 const Icon = tab.icon
                 const active = activeTab === tab.id
                 return (
-                  <button
+                  <Button variant="unstyled"
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
@@ -336,7 +338,7 @@ export default function QuickSearchDock({ locale }: Props) {
                     {active ? (
                       <span className="absolute -bottom-[9px] left-2 right-2 h-[2px] rounded-full bg-[rgba(255,255,255,0.9)]" />
                     ) : null}
-                  </button>
+                  </Button>
                 )
               })}
             </div>
@@ -356,7 +358,7 @@ export default function QuickSearchDock({ locale }: Props) {
                     const active = selectedFacets[activeTab].includes(item.slug)
                     return (
                       <li key={item.id}>
-                        <button
+                        <Button variant="unstyled"
                           type="button"
                           onClick={() => toggleFacet(activeTab, item.slug)}
                           className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition ${
@@ -368,7 +370,7 @@ export default function QuickSearchDock({ locale }: Props) {
                           <span className="text-base leading-none">•</span>
                           <span className="ml-2 flex-1 text-[15px] font-medium leading-none">{item.name}</span>
                           <span className="text-sm text-[rgba(255,255,255,0.55)]">{item.designCount}</span>
-                        </button>
+                        </Button>
                       </li>
                     )
                   })}
@@ -377,18 +379,18 @@ export default function QuickSearchDock({ locale }: Props) {
             </div>
 
             <div className="mt-3 flex justify-end">
-              <button
+              <Button variant="unstyled"
                 type="button"
                 onClick={applyFilters}
                 className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-semibold text-[#26282e] shadow-[0px_4px_24px_rgba(255,255,255,0.25)]"
               >
                 {copy.done}
-              </button>
+              </Button>
             </div>
             <p className="mt-2 px-1 text-[11px] text-[rgba(255,255,255,0.45)]">{copy.hint}</p>
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   )
 }

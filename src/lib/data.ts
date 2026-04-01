@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client"
+import { contentBlocksToPlainText, contentBlocksToSearchText, normalizeContentBlocks } from "@/lib/content-blocks"
 import { prisma } from "@/lib/prisma"
 import { localizeTopic, type Locale } from "@/lib/locale"
 import { matchesDerivedFacetFilters } from "@/lib/search-facets"
@@ -39,6 +40,66 @@ export type ForumThread = {
   }
 }
 
+export type ForumListThread = {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  createdAt: Date
+  tags: string[]
+  previewImage?: string
+  author: {
+    name: string
+    handle: string
+  }
+  metrics: {
+    comments: number
+    views: number
+    likes: number
+  }
+}
+
+export type ForumListPayload = {
+  threads: ForumListThread[]
+  todayUpdateCount: number
+  activeMemberCount: number
+  hotTags: Array<{
+    name: string
+    count: number
+  }>
+}
+
+export type ForumPostComment = {
+  id: string
+  content: string
+  createdAt: Date
+  author: {
+    id: string
+    name: string
+    handle: string
+  }
+}
+
+export type ForumPostDetail = {
+  id: string
+  slug: string
+  title: string
+  content: string
+  createdAt: Date
+  tags: string[]
+  coverImage?: string
+  author: {
+    name: string
+    handle: string
+  }
+  metrics: {
+    comments: number
+    views: number
+    likes: number
+  }
+  comments: ForumPostComment[]
+}
+
 export type HomeHeroStats = {
   todayCopyCount: number
   contributorCount: number
@@ -51,6 +112,24 @@ function getTodayRange(now = new Date()) {
   const end = new Date(start)
   end.setDate(end.getDate() + 1)
   return { start, end }
+}
+
+function normalizeForumExcerpt(input: string) {
+  const cleaned = input
+    .replace(/\r/g, "")
+    .replace(/^\s*#{1,6}\s*/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  if (!cleaned) return ""
+  return cleaned.length > 96 ? `${cleaned.slice(0, 96).trimEnd()}...` : cleaned
+}
+
+function estimateForumViews(counts: { copyEvents: number; ratings: number; likes: number; comments: number }) {
+  const direct = counts.copyEvents
+  const weighted = counts.ratings * 30 + counts.likes * 14 + counts.comments * 10
+  return Math.max(direct, weighted, counts.comments * 20 + 90)
 }
 
 async function getRatingStats(ids: string[]) {
@@ -141,7 +220,18 @@ export async function getResourceSummaries(
       OR: [
         { title: { contains: search } },
         { description: { contains: search } },
-        { content: { contains: search } },
+        {
+          contentBlocks: {
+            some: {
+              OR: [
+                { markdown: { contains: search } },
+                { linkTitle: { contains: search } },
+                { linkUrl: { contains: search } },
+                { fileName: { contains: search } },
+              ],
+            },
+          },
+        },
       ],
     })
   }
@@ -174,6 +264,7 @@ export async function getResourceSummaries(
       category: { select: { slug: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
+      contentBlocks: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
     },
   })
@@ -185,7 +276,7 @@ export async function getResourceSummaries(
             {
               title: resource.title,
               description: resource.description,
-              content: resource.content,
+              contentText: contentBlocksToSearchText(normalizeContentBlocks(resource.contentBlocks)),
               categorySlug: resource.category?.slug,
               tags: resource.tags.map((entry) => ({ slug: entry.tag.slug, name: entry.tag.name })),
             },
@@ -229,6 +320,166 @@ export async function getForumThreads(limit = 24): Promise<ForumThread[]> {
   }))
 }
 
+export async function getForumListPayload(limit = 12): Promise<ForumListPayload> {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const { start, end } = getTodayRange()
+
+  const [designs, activeMembers, hotTags, todayUpdateCount] = await Promise.all([
+    prisma.design.findMany({
+      take: limit,
+      orderBy: [{ comments: { _count: "desc" } }, { updatedAt: "desc" }],
+      include: {
+        author: { select: { name: true, handle: true } },
+        category: { select: { name: true } },
+        tags: { include: { tag: true } },
+        images: { orderBy: { order: "asc" } },
+        contentBlocks: { orderBy: { order: "asc" } },
+        _count: { select: { comments: true, likes: true, ratings: true, copyEvents: true } },
+      },
+    }),
+    prisma.comment.groupBy({
+      by: ["authorId"],
+      where: {
+        createdAt: {
+          gte: thirtyDaysAgo,
+        },
+      },
+    }),
+    prisma.tag.findMany({
+      take: 6,
+      orderBy: { designs: { _count: "desc" } },
+      include: {
+        _count: { select: { designs: true } },
+      },
+    }),
+    prisma.comment.count({
+      where: {
+        createdAt: {
+          gte: start,
+          lt: end,
+        },
+      },
+    }),
+  ])
+
+  const threads: ForumListThread[] = designs.map((design) => {
+    const tags = design.tags.map((entry) => entry.tag.name).slice(0, 2)
+    if (tags.length === 0 && design.category?.name) {
+      tags.push(design.category.name)
+    }
+
+    const excerptSource = design.description || contentBlocksToPlainText(normalizeContentBlocks(design.contentBlocks))
+    const excerpt = normalizeForumExcerpt(excerptSource)
+
+    return {
+      id: design.id,
+      slug: design.slug,
+      title: design.title,
+      excerpt,
+      createdAt: design.updatedAt,
+      tags,
+      previewImage: design.images[0]?.url,
+      author: {
+        name: design.author.name,
+        handle: design.author.handle,
+      },
+      metrics: {
+        comments: design._count.comments,
+        views: estimateForumViews({
+          copyEvents: design._count.copyEvents,
+          ratings: design._count.ratings,
+          likes: design._count.likes,
+          comments: design._count.comments,
+        }),
+        likes: design._count.likes,
+      },
+    }
+  })
+
+  return {
+    threads,
+    todayUpdateCount,
+    activeMemberCount: activeMembers.length,
+    hotTags: hotTags.map((tag) => ({
+      name: tag.name,
+      count: tag._count.designs,
+    })),
+  }
+}
+
+export async function getForumPostDetail(slug: string): Promise<ForumPostDetail | null> {
+  const post = await prisma.design.findUnique({
+    where: { slug },
+    include: {
+      author: { select: { name: true, handle: true } },
+      category: { select: { name: true } },
+      tags: { include: { tag: true } },
+      images: { orderBy: { order: "asc" } },
+      contentBlocks: { orderBy: { order: "asc" } },
+      _count: { select: { comments: true, likes: true, ratings: true, copyEvents: true } },
+    },
+  })
+
+  if (!post) return null
+
+  const comments = await prisma.comment.findMany({
+    where: { designId: post.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          handle: true,
+        },
+      },
+    },
+  })
+
+  const tags = post.tags.map((entry) => entry.tag.name).slice(0, 3)
+  if (tags.length === 0 && post.category?.name) {
+    tags.push(post.category.name)
+  }
+
+  const content = contentBlocksToPlainText(normalizeContentBlocks(post.contentBlocks))
+
+  return {
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    content,
+    createdAt: post.updatedAt,
+    tags,
+    coverImage: post.images[0]?.url,
+    author: {
+      name: post.author.name,
+      handle: post.author.handle,
+    },
+    metrics: {
+      comments: post._count.comments,
+      views: estimateForumViews({
+        copyEvents: post._count.copyEvents,
+        ratings: post._count.ratings,
+        likes: post._count.likes,
+        comments: post._count.comments,
+      }),
+      likes: post._count.likes,
+    },
+    comments: comments.map((comment) => ({
+      id: comment.id,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      author: {
+        id: comment.author.id,
+        name: comment.author.name,
+        handle: comment.author.handle,
+      },
+    })),
+  }
+}
+
 export async function getResourceDetail(slug: string): Promise<ResourceDetail | null> {
   const resource = await prisma.design.findUnique({
     where: { slug },
@@ -236,6 +487,7 @@ export async function getResourceDetail(slug: string): Promise<ResourceDetail | 
       author: { select: { id: true, name: true, handle: true } },
       tags: { include: { tag: true } },
       images: { orderBy: { order: "asc" } },
+      contentBlocks: { orderBy: { order: "asc" } },
       _count: { select: { comments: true, ratings: true } },
     },
   })
@@ -253,7 +505,7 @@ export async function getResourceDetail(slug: string): Promise<ResourceDetail | 
     slug: resource.slug,
     title: resource.title,
     description: resource.description,
-    content: resource.content,
+    contentBlocks: normalizeContentBlocks(resource.contentBlocks),
     resourceType: resource.resourceType,
     toolAgent: resource.toolAgent,
     scenario: resource.scenario,

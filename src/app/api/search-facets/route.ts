@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { contentBlocksToSearchText, normalizeContentBlocks } from "@/lib/content-blocks"
 import { LOCALE_COOKIE_NAME, localizeTopic, normalizeLocale } from "@/lib/locale"
 import { prisma } from "@/lib/prisma"
 import { buildDerivedFacetItems } from "@/lib/search-facets"
@@ -18,7 +19,21 @@ export async function GET(request: NextRequest) {
         select: {
           title: true,
           description: true,
-          content: true,
+          contentBlocks: {
+            select: {
+              type: true,
+              order: true,
+              markdown: true,
+              linkUrl: true,
+              linkTitle: true,
+              linkPreviewImage: true,
+              fileUrl: true,
+              fileName: true,
+              fileSizeBytes: true,
+              fileMimeType: true,
+            },
+            orderBy: { order: "asc" },
+          },
           category: { select: { slug: true } },
           tags: { select: { tag: { select: { slug: true, name: true } } } },
         },
@@ -44,7 +59,7 @@ export async function GET(request: NextRequest) {
       designs.map((design) => ({
         title: design.title,
         description: design.description,
-        content: design.content,
+        contentText: contentBlocksToSearchText(normalizeContentBlocks(design.contentBlocks)),
         categorySlug: design.category?.slug,
         tags: design.tags.map((entry) => entry.tag),
       })),

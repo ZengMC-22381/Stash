@@ -18,7 +18,7 @@ export type FacetTagLike = {
 export type FacetDesignLike = {
   title?: string | null
   description?: string | null
-  content?: string | null
+  contentText?: string | null
   categorySlug?: string | null
   tags?: FacetTagLike[]
 }
@@ -175,7 +175,7 @@ export function deriveFacetSignals(input: FacetDesignLike): FacetSignalSet {
   const platformSet = new Set<string>()
   const tagSlugs = getTagSlugs(input.tags)
 
-  const sourceText = [input.title, input.description, input.content, tagSlugs.join(" "), input.categorySlug]
+  const sourceText = [input.title, input.description, input.contentText, tagSlugs.join(" "), input.categorySlug]
     .filter(Boolean)
     .join(" ")
     .toLowerCase()

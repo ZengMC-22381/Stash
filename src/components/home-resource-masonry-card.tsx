@@ -4,6 +4,7 @@
 import Link from "next/link"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { Button } from "@/components/ui/button"
 import type { Locale } from "@/lib/locale"
 
 type ResourceTag = {
@@ -107,22 +108,22 @@ export default function HomeResourceMasonryCard({ resource, locale }: Props) {
 
         {canSwitch ? (
           <div className="pointer-events-none absolute inset-x-4 top-4 flex items-center justify-between opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
-            <button
+            <Button variant="unstyled"
               type="button"
               aria-label={locale === "zh" ? "上一张效果图" : "Previous image"}
               onClick={prevImage}
               className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-black/40 text-white backdrop-blur transition hover:bg-black/55"
             >
               <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button variant="unstyled"
               type="button"
               aria-label={locale === "zh" ? "下一张效果图" : "Next image"}
               onClick={nextImage}
               className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-black/40 text-white backdrop-blur transition hover:bg-black/55"
             >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         ) : null}
 

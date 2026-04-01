@@ -17,6 +17,7 @@ export async function GET(_request: NextRequest, context: RouteProps) {
         category: true,
         tags: { include: { tag: true } },
         images: { orderBy: { order: "asc" } },
+        contentBlocks: { orderBy: { order: "asc" } },
         _count: { select: { comments: true, ratings: true, likes: true } },
       },
     })
@@ -36,7 +37,6 @@ export async function GET(_request: NextRequest, context: RouteProps) {
       slug: resource.slug,
       title: resource.title,
       description: resource.description,
-      content: resource.content,
       resourceType: resource.resourceType,
       toolAgent: resource.toolAgent,
       scenario: resource.scenario,
@@ -44,6 +44,7 @@ export async function GET(_request: NextRequest, context: RouteProps) {
       category: resource.category,
       tags: resource.tags.map((entry) => entry.tag),
       images: resource.images,
+      contentBlocks: resource.contentBlocks,
       stats: {
         comments: resource._count.comments,
         ratings: rating._count._all,

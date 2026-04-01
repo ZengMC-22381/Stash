@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Bookmark, Heart, Share2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import type { Locale } from "@/lib/locale"
 
 type Props = {
@@ -158,7 +159,7 @@ export default function ResourceActions({ slug, locale }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={handleLike}
           disabled={loading}
@@ -172,9 +173,9 @@ export default function ResourceActions({ slug, locale }: Props) {
           <Heart className="h-3.5 w-3.5" />
           <span>{liked ? copy.liked : copy.like}</span>
           {typeof likeTotal === "number" ? <span className="text-[11px] opacity-75">{likeTotal}</span> : null}
-        </button>
+        </Button>
 
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={handleSave}
           disabled={loading}
@@ -188,9 +189,9 @@ export default function ResourceActions({ slug, locale }: Props) {
           <Bookmark className="h-3.5 w-3.5" />
           <span>{saved ? copy.saved : copy.save}</span>
           {typeof saveTotal === "number" ? <span className="text-[11px] opacity-75">{saveTotal}</span> : null}
-        </button>
+        </Button>
 
-        <button
+        <Button variant="unstyled"
           type="button"
           onClick={handleShare}
           className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[rgba(209,209,209,1)] bg-white px-3 text-xs font-semibold text-[#333333] transition hover:border-[#2f3334]"
@@ -198,7 +199,7 @@ export default function ResourceActions({ slug, locale }: Props) {
         >
           <Share2 className="h-3.5 w-3.5" />
           <span>{shareState === "shared" ? copy.shared : copy.share}</span>
-        </button>
+        </Button>
       </div>
 
       {message ? <p className="text-xs text-[#71717a]">{message}</p> : null}

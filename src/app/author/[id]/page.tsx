@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { notFound } from "next/navigation"
 import DesignCard from "@/components/design-card"
+import { Button } from "@/components/ui/button"
 import { getAuthorProfile, getResourcesByAuthor } from "@/lib/data"
 import { getServerLocale } from "@/lib/server-locale"
 
@@ -102,13 +103,13 @@ export default async function AuthorPage({ params }: PageProps) {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white shadow-float">
+              <Button variant="unstyled" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white shadow-float">
                 <Sparkles className="h-4 w-4" />
                 {copy.follow}
-              </button>
-              <button className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700">
+              </Button>
+              <Button variant="unstyled" className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700">
                 {copy.message}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -140,12 +141,12 @@ export default async function AuthorPage({ params }: PageProps) {
             <p className="text-sm text-slate-600">{copy.remixDesc}</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white shadow-float">
+            <Button variant="unstyled" className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white shadow-float">
               {copy.joinCircle}
-            </button>
-            <button className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700">
+            </Button>
+            <Button variant="unstyled" className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white px-5 text-sm font-semibold text-slate-700">
               {copy.learnMore}
-            </button>
+            </Button>
           </div>
         </div>
       </section>

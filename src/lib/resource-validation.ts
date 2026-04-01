@@ -6,6 +6,30 @@ export type NormalizedImageInput = {
   order: number
 }
 
+export type ResourceContentBlockType = "markdown" | "link" | "file"
+
+export type NormalizedResourceContentBlock =
+  | {
+      type: "markdown"
+      order: number
+      markdown: string
+    }
+  | {
+      type: "link"
+      order: number
+      url: string
+      title: string
+      previewImageUrl?: string
+    }
+  | {
+      type: "file"
+      order: number
+      fileUrl: string
+      fileName: string
+      fileSizeBytes: number
+      mimeType?: string
+    }
+
 export type ResourcePayloadValidationResult =
   | {
       ok: true
@@ -15,6 +39,7 @@ export type ResourcePayloadValidationResult =
         content: string
         tags: string[]
         images: NormalizedImageInput[]
+        contentBlocks: NormalizedResourceContentBlock[]
       }
     }
   | {
@@ -25,25 +50,79 @@ export type ResourcePayloadValidationResult =
 export const RESOURCE_VALIDATION_LIMITS = {
   titleMin: 3,
   titleMax: 120,
-  descriptionMin: 10,
   descriptionMax: 500,
   contentMin: 20,
   contentMax: 50_000,
   maxTags: 20,
   maxTagLength: 48,
-  maxImages: 12,
+  maxImages: 15,
   maxCaptionLength: 120,
-}
+  maxContentBlocks: 10,
+  maxLinkTitleLength: 160,
+  maxUrlLength: 2048,
+  maxFileNameLength: 180,
+  maxFileSizeBytes: 50 * 1024 * 1024,
+} as const
 
-function isValidImageUrl(url: string) {
-  if (url.startsWith("/uploads/")) return true
-
+function isValidHttpUrl(url: string) {
   try {
     const parsed = new URL(url)
     return parsed.protocol === "http:" || parsed.protocol === "https:"
   } catch {
     return false
   }
+}
+
+function isValidUploadPath(url: string) {
+  return url.startsWith("/uploads/")
+}
+
+function isValidImageUrl(url: string) {
+  return isValidUploadPath(url) || isValidHttpUrl(url)
+}
+
+function normalizeText(input: unknown) {
+  return typeof input === "string" ? input.trim() : ""
+}
+
+function deriveLinkTitle(url: string) {
+  try {
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./i, "")
+    return host || url
+  } catch {
+    return url
+  }
+}
+
+function summarizeForDescription(input: string, max = 160) {
+  const cleaned = input
+    .replace(/\r/g, "")
+    .replace(/^\s*#{1,6}\s*/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!cleaned) return ""
+  if (cleaned.length <= max) return cleaned
+  return `${cleaned.slice(0, max).trimEnd()}...`
+}
+
+function buildLegacyContentFromBlocks(blocks: NormalizedResourceContentBlock[]) {
+  return blocks
+    .map((block) => {
+      if (block.type === "markdown") {
+        return block.markdown
+      }
+      if (block.type === "link") {
+        return [`## Link`, block.title, block.url].join("\n")
+      }
+      return [`## File`, block.fileName, block.fileUrl].join("\n")
+    })
+    .filter(Boolean)
+    .join("\n\n")
 }
 
 export function normalizeImageInputs(input: unknown): NormalizedImageInput[] {
@@ -72,16 +151,70 @@ export function normalizeImageInputs(input: unknown): NormalizedImageInput[] {
     .filter((item): item is NormalizedImageInput => Boolean(item && item.url))
 }
 
+export function normalizeContentBlocks(input: unknown): NormalizedResourceContentBlock[] {
+  if (!Array.isArray(input)) return []
+
+  return input
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return null
+      const raw = item as Record<string, unknown>
+      const type = normalizeText(raw.type).toLowerCase()
+
+      if (type === "markdown") {
+        const markdown = normalizeText(raw.markdown || raw.content)
+        return {
+          type: "markdown" as const,
+          order: index,
+          markdown,
+        }
+      }
+
+      if (type === "link") {
+        const url = normalizeText(raw.url || raw.linkUrl)
+        const title = normalizeText(raw.title || raw.linkTitle || raw.name)
+        const previewImageUrl = normalizeText(raw.previewImageUrl || raw.linkPreviewImageUrl || raw.image)
+        return {
+          type: "link" as const,
+          order: index,
+          url,
+          title,
+          previewImageUrl: previewImageUrl || undefined,
+        }
+      }
+
+      if (type === "file") {
+        const fileUrl = normalizeText(raw.fileUrl || raw.url)
+        const fileName = normalizeText(raw.fileName || raw.name)
+        const fileSizeBytesRaw = Number(raw.fileSizeBytes ?? raw.size ?? 0)
+        const fileSizeBytes =
+          Number.isFinite(fileSizeBytesRaw) && fileSizeBytesRaw > 0 ? Math.round(fileSizeBytesRaw) : 0
+        const mimeType = normalizeText(raw.mimeType || raw.typeHint || raw.contentType)
+
+        return {
+          type: "file" as const,
+          order: index,
+          fileUrl,
+          fileName,
+          fileSizeBytes,
+          mimeType: mimeType || undefined,
+        }
+      }
+
+      return null
+    })
+    .filter((item): item is NormalizedResourceContentBlock => Boolean(item))
+}
+
 export function validateResourcePayload(input: {
   title: string
-  description: string
-  content: string
+  description?: string
+  content?: string
   tags: unknown
   images: unknown
+  contentBlocks?: unknown
 }): ResourcePayloadValidationResult {
   const title = input.title.trim()
-  const description = input.description.trim()
-  const content = input.content.trim()
+  const descriptionRaw = (input.description || "").trim()
 
   if (title.length < RESOURCE_VALIDATION_LIMITS.titleMin || title.length > RESOURCE_VALIDATION_LIMITS.titleMax) {
     return {
@@ -90,20 +223,136 @@ export function validateResourcePayload(input: {
     }
   }
 
-  if (
-    description.length < RESOURCE_VALIDATION_LIMITS.descriptionMin ||
-    description.length > RESOURCE_VALIDATION_LIMITS.descriptionMax
-  ) {
+  if (descriptionRaw.length > RESOURCE_VALIDATION_LIMITS.descriptionMax) {
     return {
       ok: false,
-      error: `Description must be ${RESOURCE_VALIDATION_LIMITS.descriptionMin}-${RESOURCE_VALIDATION_LIMITS.descriptionMax} characters.`,
+      error: `Description must be at most ${RESOURCE_VALIDATION_LIMITS.descriptionMax} characters.`,
     }
   }
 
-  if (content.length < RESOURCE_VALIDATION_LIMITS.contentMin || content.length > RESOURCE_VALIDATION_LIMITS.contentMax) {
+  const normalizedBlocks = normalizeContentBlocks(input.contentBlocks)
+  if (normalizedBlocks.length === 0) {
     return {
       ok: false,
-      error: `Content must be ${RESOURCE_VALIDATION_LIMITS.contentMin}-${RESOURCE_VALIDATION_LIMITS.contentMax} characters.`,
+      error: "At least one content block is required.",
+    }
+  }
+
+  if (normalizedBlocks.length > RESOURCE_VALIDATION_LIMITS.maxContentBlocks) {
+    return {
+      ok: false,
+      error: `Too many content blocks. Maximum allowed is ${RESOURCE_VALIDATION_LIMITS.maxContentBlocks}.`,
+    }
+  }
+
+  const contentBlocks: NormalizedResourceContentBlock[] = []
+
+  if (normalizedBlocks.length > 0) {
+    for (const block of normalizedBlocks) {
+      if (block.type === "markdown") {
+        if (!block.markdown) {
+          return { ok: false, error: "Markdown block content is required." }
+        }
+
+        if (block.markdown.length > RESOURCE_VALIDATION_LIMITS.contentMax) {
+          return {
+            ok: false,
+            error: `Markdown block content must be at most ${RESOURCE_VALIDATION_LIMITS.contentMax} characters.`,
+          }
+        }
+
+        contentBlocks.push({
+          type: "markdown",
+          order: contentBlocks.length,
+          markdown: block.markdown,
+        })
+        continue
+      }
+
+      if (block.type === "link") {
+        if (!block.url) {
+          return { ok: false, error: "Link block URL is required." }
+        }
+
+        if (block.url.length > RESOURCE_VALIDATION_LIMITS.maxUrlLength) {
+          return {
+            ok: false,
+            error: `Link URL must be at most ${RESOURCE_VALIDATION_LIMITS.maxUrlLength} characters.`,
+          }
+        }
+
+        if (!isValidHttpUrl(block.url)) {
+          return { ok: false, error: "Link URL must be an absolute http(s) URL." }
+        }
+
+        const linkTitle = block.title || deriveLinkTitle(block.url)
+        if (linkTitle.length > RESOURCE_VALIDATION_LIMITS.maxLinkTitleLength) {
+          return {
+            ok: false,
+            error: `Link title must be at most ${RESOURCE_VALIDATION_LIMITS.maxLinkTitleLength} characters.`,
+          }
+        }
+
+        if (block.previewImageUrl) {
+          if (block.previewImageUrl.length > RESOURCE_VALIDATION_LIMITS.maxUrlLength) {
+            return {
+              ok: false,
+              error: `Preview image URL must be at most ${RESOURCE_VALIDATION_LIMITS.maxUrlLength} characters.`,
+            }
+          }
+
+          if (!isValidImageUrl(block.previewImageUrl)) {
+            return {
+              ok: false,
+              error: "Preview image URL must be an absolute http(s) URL or a local /uploads/ path.",
+            }
+          }
+        }
+
+        contentBlocks.push({
+          type: "link",
+          order: contentBlocks.length,
+          url: block.url,
+          title: linkTitle,
+          previewImageUrl: block.previewImageUrl,
+        })
+        continue
+      }
+
+      if (!block.fileUrl || !isValidImageUrl(block.fileUrl)) {
+        return { ok: false, error: "File block URL must be an absolute http(s) URL or a local /uploads/ path." }
+      }
+
+      if (!block.fileName) {
+        return { ok: false, error: "File block name is required." }
+      }
+
+      if (block.fileName.length > RESOURCE_VALIDATION_LIMITS.maxFileNameLength) {
+        return {
+          ok: false,
+          error: `File name must be at most ${RESOURCE_VALIDATION_LIMITS.maxFileNameLength} characters.`,
+        }
+      }
+
+      if (!Number.isFinite(block.fileSizeBytes) || block.fileSizeBytes <= 0) {
+        return { ok: false, error: "File size must be greater than 0." }
+      }
+
+      if (block.fileSizeBytes > RESOURCE_VALIDATION_LIMITS.maxFileSizeBytes) {
+        return {
+          ok: false,
+          error: `Each file must be <= ${Math.floor(RESOURCE_VALIDATION_LIMITS.maxFileSizeBytes / 1024 / 1024)}MB.`,
+        }
+      }
+
+      contentBlocks.push({
+        type: "file",
+        order: contentBlocks.length,
+        fileUrl: block.fileUrl,
+        fileName: block.fileName,
+        fileSizeBytes: block.fileSizeBytes,
+        mimeType: block.mimeType,
+      })
     }
   }
 
@@ -112,6 +361,7 @@ export function validateResourcePayload(input: {
       normalizeResourceTagValues(input.tags).map((tag) => [tag.toLowerCase(), tag])
     ).values()
   )
+
   if (tags.length > RESOURCE_VALIDATION_LIMITS.maxTags) {
     return {
       ok: false,
@@ -135,7 +385,7 @@ export function validateResourcePayload(input: {
   }
 
   for (const image of images) {
-    if (!isValidImageUrl(image.url)) {
+    if (image.url.length > RESOURCE_VALIDATION_LIMITS.maxUrlLength || !isValidImageUrl(image.url)) {
       return { ok: false, error: "Image URL must be an absolute http(s) URL or a local /uploads/ path." }
     }
 
@@ -147,14 +397,30 @@ export function validateResourcePayload(input: {
     }
   }
 
+  const contentFromBlocks = buildLegacyContentFromBlocks(contentBlocks)
+  const content = contentFromBlocks.trim()
+
+  if (!content || content.length > RESOURCE_VALIDATION_LIMITS.contentMax) {
+    return {
+      ok: false,
+      error: "Content is required.",
+    }
+  }
+
+  const description =
+    descriptionRaw ||
+    summarizeForDescription(content) ||
+    `Resource: ${title}`
+
   return {
     ok: true,
     value: {
       title,
-      description,
-      content,
+      description: description.slice(0, RESOURCE_VALIDATION_LIMITS.descriptionMax),
+      content: "",
       tags,
       images,
+      contentBlocks,
     },
   }
 }
